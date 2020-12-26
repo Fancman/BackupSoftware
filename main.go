@@ -252,7 +252,7 @@ func start_backup(source string, destination_ksuid string) {
 		//" a -t7z '"+info[0]+":/backup/test.7zip' '"+source+"'"
 		//args..
 		//fmt.Println("a -t7z " + info[0] + ":\backup\test.7zip " + source)
-		cmd := exec.Command("C:/Program Files/7-Zip/7z.exe", args...)
+		cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
 		//cmd := exec.Command("ls", "-lah")
 		//cmd := exec.Command("C:/Users/fancy/go/src/bakalarska praca/7z/7z-portable.exe", args...)
 		cmd.Stdout = os.Stdout
