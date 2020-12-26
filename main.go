@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -25,12 +26,65 @@ var commands = map[string]int{
 var db *sql.DB
 var err error
 
-func drive_db_exists(drive_letter string) (bool, []string) {
+type Backup struct {
+	id                int
+	source            string
+	destination_ksuid string
+	cron              string
+}
+
+func find_backups(db *sql.DB) []Backup {
+	var id int
+	var source string
+	var destination_ksuid string
+	var cron string
+
+	rows, err := db.Query(`SELECT id, source, destination_ksuid, cron FROM backups;`)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+
+	var backups []Backup
+
+	for rows.Next() {
+		err := rows.Scan(&id, &source, &destination_ksuid, &cron)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println(id, source, destination_ksuid, cron)
+		backups = append(backups, Backup{id: id, source: source, destination_ksuid: destination_ksuid, cron: cron})
+	}
+	if err := rows.Err(); err != nil {
+		fmt.Println(err)
+	}
+
+	return backups
+}
+
+func drive_db_exists_letter(drive_letter string) (bool, []string) {
 	stmt := `SELECT drive_letter, drive_ksuid FROM drives 
 	WHERE drive_letter=?`
 	var r_ksuid string
 	var r_letter string
 	row := db.QueryRow(stmt, drive_letter)
+	switch err := row.Scan(&r_letter, &r_ksuid); err {
+	case sql.ErrNoRows:
+		return false, []string{}
+	case nil:
+		return true, []string{r_letter, r_ksuid}
+	default:
+		panic(err)
+	}
+}
+
+func drive_db_exists_ksuid(drive_ksuid string) (bool, []string) {
+	stmt := `SELECT drive_letter, drive_ksuid FROM drives 
+	WHERE drive_ksuid=?`
+	var r_ksuid string
+	var r_letter string
+	row := db.QueryRow(stmt, drive_ksuid)
 	switch err := row.Scan(&r_letter, &r_ksuid); err {
 	case sql.ErrNoRows:
 		return false, []string{}
@@ -110,8 +164,22 @@ func insert_drive_db(drive_letter string, ksuid string) {
 	}
 }
 
+func delete_drive_db(ksuid string) {
+	fmt.Println("Mazanie drivu z tabulky")
+	sql_str := `DELETE FROM drives WHERE drive_ksuid=?`
+	stmt, err := db.Prepare(sql_str) // Prepare statement.
+	// This is good to avoid SQL injections
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	_, err = stmt.Exec(ksuid)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
 func insert_backups_db(source string, destination string, cron string) {
-	exists, info := drive_db_exists(string(destination))
+	exists, info := drive_db_exists_letter(string(destination))
 
 	if exists {
 		sql_str := `INSERT INTO backups(source, destination_ksuid, cron) 
@@ -157,7 +225,8 @@ func write_disk_identification(drive_letter string, ksuid string) {
 	file, err := os.OpenFile(drive_letter+":/.drive", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	fmt.Println("Vytvaranie .drive suboru na " + drive_letter + ":/.drive")
 	if err != nil {
-		fmt.Println("Nepodarilo sa vytvorit subor")
+		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
+		delete_drive_db(ksuid)
 	}
 
 	datawriter := bufio.NewWriter(file)
@@ -176,12 +245,34 @@ func gen_ksuid() string {
 	//fmt.Printf("github.com/segmentio/ksuid:     %s\n", id.String())
 }
 
+func start_backup(source string, destination_ksuid string) {
+	exists, info := drive_db_exists_ksuid(string(destination_ksuid))
+	if exists {
+		args := []string{"a", "-t7z", info[0] + ":/backup/test.7zip", source}
+		//" a -t7z '"+info[0]+":/backup/test.7zip' '"+source+"'"
+		//args..
+		//fmt.Println("a -t7z " + info[0] + ":\backup\test.7zip " + source)
+		cmd := exec.Command("C:/Program Files/7-Zip/7z.exe", args...)
+		//cmd := exec.Command("ls", "-lah")
+		//cmd := exec.Command("C:/Users/fancy/go/src/bakalarska praca/7z/7z-portable.exe", args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			log.Fatalf("cmd.Run() failed with %s\n", err)
+		}
+		/*if err := cmd.Start(); err != nil {
+			fmt.Println(err)
+		}*/
+	}
+}
+
 func list_drives() {
 	drives := get_drives()
 
 	if len(drives) > 0 {
 		for _, d := range drives {
-			exists, info := drive_db_exists(string(d))
+			exists, info := drive_db_exists_letter(string(d))
 
 			if file_exists(d + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
@@ -222,6 +313,17 @@ func main() {
 
 	defer db.Close() // Defer Closing the database
 
+	backups := find_backups(db)
+
+	if len(backups) > 0 {
+		for _, b := range backups {
+			start_backup(b.source, b.destination_ksuid)
+		}
+	}
+
+	fmt.Println("STOP")
+	os.Exit(3)
+
 	//execute_sql(db, `DROP TABLE IF EXISTS drives;`)
 
 	execute_sql(`CREATE TABLE IF NOT EXISTS drives(
@@ -261,15 +363,30 @@ func main() {
 			for input_2.Scan() {
 				indata := input_2.Text()
 
+				drives := get_drives()
+				drive_exists := false
+
+				if len(drives) > 0 {
+					for _, d := range drives {
+						if d == indata {
+							drive_exists = true
+						}
+					}
+				}
+
 				//fmt.Println(indata)
 
-				exists, info := drive_db_exists(string(indata))
-				ksuid := gen_ksuid()
-				if !exists {
-					insert_drive_db(indata, ksuid)
-					write_disk_identification(indata, ksuid)
+				if drive_exists {
+					exists, info := drive_db_exists_letter(string(indata))
+					ksuid := gen_ksuid()
+					if !exists {
+						insert_drive_db(indata, ksuid)
+						write_disk_identification(indata, ksuid)
+					} else {
+						fmt.Println("Drive s rovnakym pismenom je uz v db pod drive_ksuid" + info[1])
+					}
 				} else {
-					fmt.Println("Drive s rovnakym pismenom je uz v db pod drive_ksuid" + info[1])
+					fmt.Println("Drive so zadanym pismenom neexistuje")
 				}
 
 				/*err = db.add_drive(DriveStruct{Path: filepath.Clean(indata)})
@@ -314,7 +431,7 @@ func main() {
 				}
 				break
 			}
-			break
+			//break
 		} else if indata == "4" {
 			break
 		}
