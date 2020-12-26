@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -15,10 +16,10 @@ import (
 )
 
 var commands = map[string]int{
-	"Pridat novy drive do db":        1,
-	"Vypisat dostupne drivy":         2,
-	"Vypis ci su drivy ulozene v db": 3,
-	"Quit":                           4,
+	"Pridat novy drive do db": 1,
+	"Vypisat dostupne drivy":  2,
+	"Vytvorit zalohu":         3,
+	"Quit":                    4,
 }
 
 var db *sql.DB
@@ -73,12 +74,6 @@ func create_db() {
 	}
 }
 
-/*func load_db() *sql.DB {
-	db, _ := sql.Open("sqlite3", "./sqlite-database.db") // Open the created SQLite File
-	defer db.Close()                                     // Defer Closing the database
-	return db
-}*/
-
 func help() {
 	for k, v := range commands {
 		fmt.Println(k + " - " + strconv.Itoa(v))
@@ -112,6 +107,26 @@ func insert_drive_db(drive_letter string, ksuid string) {
 	_, err = stmt.Exec(drive_letter, ksuid)
 	if err != nil {
 		fmt.Println(err.Error())
+	}
+}
+
+func insert_backups_db(source string, destination string, cron string) {
+	exists, info := drive_db_exists(string(destination))
+
+	if exists {
+		sql_str := `INSERT INTO backups(source, destination_ksuid, cron) 
+		VALUES (?, ?, ?)`
+		stmt, err := db.Prepare(sql_str) // Prepare statement.
+		// This is good to avoid SQL injections
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		_, err = stmt.Exec(source, info[1], cron)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		fmt.Println("Disk nie je v databaze")
 	}
 }
 
@@ -173,11 +188,12 @@ func list_drives() {
 				if !exists {
 					lines, err := read_file_lines(d + ":/.drive")
 					if err != nil {
-						fmt.Printf("readLines: %s", err)
+						fmt.Printf("Error pri citani suboru: %s", err)
 					}
 
 					insert_drive_db(lines[0], lines[1])
 				}
+				// ak existuju obidve osetrit ak sa nezhoduju udaje
 			} else {
 				// ak nema .drive subor a je zapisane v db
 				if exists {
@@ -214,6 +230,13 @@ func main() {
 		'drive_ksuid' TEXT
 	);`)
 
+	execute_sql(`CREATE TABLE IF NOT EXISTS backups(
+		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+		'source' TEXT,
+		'destination_ksuid' TEXT,
+		'cron' TEXT
+	);`)
+
 	help()
 
 	if err != nil {
@@ -240,7 +263,14 @@ func main() {
 
 				//fmt.Println(indata)
 
-				insert_drive_db(indata, gen_ksuid())
+				exists, info := drive_db_exists(string(indata))
+				ksuid := gen_ksuid()
+				if !exists {
+					insert_drive_db(indata, ksuid)
+					write_disk_identification(indata, ksuid)
+				} else {
+					fmt.Println("Drive s rovnakym pismenom je uz v db pod drive_ksuid" + info[1])
+				}
 
 				/*err = db.add_drive(DriveStruct{Path: filepath.Clean(indata)})
 				if err != nil {
@@ -252,6 +282,38 @@ func main() {
 		} else if indata == "2" {
 			list_drives()
 		} else if indata == "3" {
+			fmt.Println("Zadaj priecinok na zalohu")
+			input_2 := bufio.NewScanner(os.Stdin)
+
+			for input_2.Scan() {
+				source := input_2.Text()
+
+				fmt.Println("Zadaj pismeno cieloveho disku na zalohu")
+				input_3 := bufio.NewScanner(os.Stdin)
+
+				for input_3.Scan() {
+					destination := input_3.Text()
+
+					fmt.Println("Zadaj cron zalohy")
+					input_4 := bufio.NewScanner(os.Stdin)
+
+					for input_4.Scan() {
+						cron := input_4.Text()
+
+						fmt.Println(filepath.Clean(source) + " " + destination + " " + cron)
+
+						insert_backups_db(filepath.Clean(source), destination, cron)
+
+						/*err = db.add_drive(DriveStruct{Path: filepath.Clean(indata)})
+						if err != nil {
+							fmt.Printf("Drive couldnt be saved because: %s \n", err)
+						}*/
+						break
+					}
+					break
+				}
+				break
+			}
 			break
 		} else if indata == "4" {
 			break
