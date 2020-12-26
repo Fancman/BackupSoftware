@@ -7,14 +7,37 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
+
+	"github.com/segmentio/ksuid"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var commands = map[string]int{
-	"Add new path.":     1,
-	"List saved drives": 2,
-	"Quit":              3,
+	"Pridat novy drive do db":        1,
+	"Vypisat dostupne drivy":         2,
+	"Vypis ci su drivy ulozene v db": 3,
+	"Quit":                           4,
+}
+
+var db *sql.DB
+var err error
+
+func drive_db_exists(drive_letter string) (bool, []string) {
+	stmt := `SELECT drive_letter, drive_ksuid FROM drives 
+	WHERE drive_letter=?`
+	var r_ksuid string
+	var r_letter string
+	row := db.QueryRow(stmt, drive_letter)
+	switch err := row.Scan(&r_letter, &r_ksuid); err {
+	case sql.ErrNoRows:
+		return false, []string{}
+	case nil:
+		return true, []string{r_letter, r_ksuid}
+	default:
+		panic(err)
+	}
 }
 
 func get_drives() (r []string) {
@@ -62,7 +85,7 @@ func help() {
 	}
 }
 
-func execute_sql(db *sql.DB, sql_str string) {
+func execute_sql(sql_str string) {
 	fmt.Println("Executing SQL.")
 	stmt, err := db.Prepare(sql_str) // Prepare SQL Statement
 	if err != nil {
@@ -72,15 +95,110 @@ func execute_sql(db *sql.DB, sql_str string) {
 	fmt.Println("SQL query was executed")
 }
 
-func execute_sql_query(db *sql.DB, sql_str string) *sql.Rows {
+func execute_sql_query(sql_str string) *sql.Rows {
 	fmt.Println("Executing SQL query.")
 	rows, _ := db.Query(sql_str)
 	return rows
 }
 
+func insert_drive_db(drive_letter string, ksuid string) {
+	sql_str := `INSERT INTO drives(drive_letter, drive_ksuid) 
+	VALUES (?, ?)`
+	stmt, err := db.Prepare(sql_str) // Prepare statement.
+	// This is good to avoid SQL injections
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	_, err = stmt.Exec(drive_letter, ksuid)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func read_file_lines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
+}
+
+func write_disk_identification(drive_letter string, ksuid string) {
+	currentTime := time.Now()
+
+	data := []string{
+		drive_letter,
+		ksuid,
+		currentTime.String(),
+	}
+
+	file, err := os.OpenFile(drive_letter+":/.drive", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	fmt.Println("Vytvaranie .drive suboru na " + drive_letter + ":/.drive")
+	if err != nil {
+		fmt.Println("Nepodarilo sa vytvorit subor")
+	}
+
+	datawriter := bufio.NewWriter(file)
+
+	for _, data := range data {
+		_, _ = datawriter.WriteString(data + "\n")
+	}
+
+	datawriter.Flush()
+	file.Close()
+}
+
+// https://blog.kowalczyk.info/article/JyRZ/generating-good-unique-ids-in-go.html
+func gen_ksuid() string {
+	return ksuid.New().String()
+	//fmt.Printf("github.com/segmentio/ksuid:     %s\n", id.String())
+}
+
+func list_drives() {
+	drives := get_drives()
+
+	if len(drives) > 0 {
+		for _, d := range drives {
+			exists, info := drive_db_exists(string(d))
+
+			if file_exists(d + ":/.drive") {
+				// ak ma .drive subor a nie je zapisane v db
+				if !exists {
+					lines, err := read_file_lines(d + ":/.drive")
+					if err != nil {
+						fmt.Printf("readLines: %s", err)
+					}
+
+					insert_drive_db(lines[0], lines[1])
+				}
+			} else {
+				// ak nema .drive subor a je zapisane v db
+				if exists {
+					write_disk_identification(info[0], info[1])
+				}
+			}
+			fmt.Print(d)
+
+			if exists {
+				fmt.Print(" - ulozene pod ksid" + info[1])
+			}
+			fmt.Print("\n")
+		}
+	} else {
+		fmt.Println("Nie su ziadne disky na PC")
+	}
+}
+
 func main() {
 	create_db()
-	db, err := sql.Open("sqlite3", "./sqlite-database.db") // Open the created SQLite File
+	db, err = sql.Open("sqlite3", "./sqlite-database.db") // Open the created SQLite File
 
 	if err != nil {
 		fmt.Println(err)
@@ -88,9 +206,12 @@ func main() {
 
 	defer db.Close() // Defer Closing the database
 
-	execute_sql(db, `CREATE TABLE IF NOT EXISTS drives(
+	//execute_sql(db, `DROP TABLE IF EXISTS drives;`)
+
+	execute_sql(`CREATE TABLE IF NOT EXISTS drives(
 		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		'drive_letter' TEXT
+		'drive_letter' TEXT,
+		'drive_ksuid' TEXT
 	);`)
 
 	help()
@@ -99,7 +220,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println("-----------------------------")
-	fmt.Println("Type a number assigned to command")
+	fmt.Println("Zadaj cislo priradene k prikazu")
 
 	input := bufio.NewScanner(os.Stdin)
 
@@ -107,16 +228,19 @@ func main() {
 
 		indata := input.Text()
 
-		fmt.Println("Input key is: " + indata)
+		fmt.Println("Zadane cislo  je: " + indata)
 
 		if indata == "1" {
-			fmt.Println("Type a path for new drive")
+			list_drives()
+			fmt.Println("Zadaj pismeno priradene k disku")
 			input_2 := bufio.NewScanner(os.Stdin)
 
 			for input_2.Scan() {
 				indata := input_2.Text()
 
-				fmt.Println(indata)
+				//fmt.Println(indata)
+
+				insert_drive_db(indata, gen_ksuid())
 
 				/*err = db.add_drive(DriveStruct{Path: filepath.Clean(indata)})
 				if err != nil {
@@ -126,24 +250,14 @@ func main() {
 			}
 
 		} else if indata == "2" {
-			drives := get_drives()
-
-			if err == nil {
-				for _, d := range drives {
-					fmt.Println(d)
-				}
-				if len(drives) == 0 {
-					fmt.Println("There arent any saved drives")
-				}
-			} else {
-				fmt.Println(err)
-			}
-
+			list_drives()
 		} else if indata == "3" {
+			break
+		} else if indata == "4" {
 			break
 		}
 
-		fmt.Println("Type a number assigned to command")
+		fmt.Println("Zadaj cislo priradene k prikazu")
 		fmt.Println("-----------------------------")
 	}
 
