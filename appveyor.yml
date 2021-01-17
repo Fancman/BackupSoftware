@@ -13,20 +13,16 @@ environment:
   GOPATH: c:\gopath
 
 install:
+  - ps: Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=0" -FileName 7-ZipPortable.zip;
+  - ps: 7z x 7-ZipPortable.zip -oc:\7-ZipPortable | out-null;
+
+before_build:
   - echo %PATH%
   - echo %GOPATH%
   - set PATH=%GOPATH%\bin;C:\msys64\mingw64\bin;c:\go\bin;%PATH%
   - go version
   - go env
   - go get ./...
-  #- where gcc.exe
-  - ps: |
-      Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=0" -FileName 7-ZipPortable.zip;
-
 
 build_script:
   - go build -o buildOutput\myapp -i .
-
-after_build:
-  - ps: |
-      7z x 7-ZipPortable.zip -oc:\7-ZipPortable *.cpp -r | out-null;
