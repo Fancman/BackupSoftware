@@ -24,6 +24,7 @@ before_build:
   - go version
   - go env
   - dir
+  - cmd: cd %clone_folder%\7-ZipPortable && dir
   - go get ./...
 
 build_script:
