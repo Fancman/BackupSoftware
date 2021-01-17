@@ -6,3 +6,18 @@ platform: x64
 branches:
   only:
     - master
+
+clone_folder: c:\gopath\src\github.com\Fancman\BackupSoftware
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go version
+  - go env
+
+build_script:
+  - go build -o buildOutput\myapp -i .
