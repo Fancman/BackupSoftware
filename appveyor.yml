@@ -19,6 +19,7 @@ install:
   - go version
   - go env
   - go get ./...
+  - where gcc.exe
 
 build_script:
   - go build -o buildOutput\myapp -i .
