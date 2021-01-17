@@ -16,6 +16,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Prikazy pri interativnom mode
 var commands = map[string]int{
 	"Pridat novy drive do db": 1,
 	"Vypisat dostupne drivy":  2,
@@ -33,6 +34,7 @@ type Backup struct {
 	cron              string
 }
 
+// Vrati pole zaznamov z tabulky backups
 func find_backups(db *sql.DB) []Backup {
 	var id int
 	var source string
@@ -63,6 +65,7 @@ func find_backups(db *sql.DB) []Backup {
 	return backups
 }
 
+// Vrati drive podla pismena
 func drive_db_exists_letter(drive_letter string) (bool, []string) {
 	stmt := `SELECT drive_letter, drive_ksuid FROM drives 
 	WHERE drive_letter=?`
@@ -79,6 +82,7 @@ func drive_db_exists_letter(drive_letter string) (bool, []string) {
 	}
 }
 
+// Vrati drive podla ksuid
 func drive_db_exists_ksuid(drive_ksuid string) (bool, []string) {
 	stmt := `SELECT drive_letter, drive_ksuid FROM drives 
 	WHERE drive_ksuid=?`
@@ -95,6 +99,7 @@ func drive_db_exists_ksuid(drive_ksuid string) (bool, []string) {
 	}
 }
 
+// Vrati zoznam dostypnych diskov
 func get_drives() (r []string) {
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
 		f, err := os.Open(string(drive) + ":\\")
@@ -106,6 +111,7 @@ func get_drives() (r []string) {
 	return r
 }
 
+// Existuje súbor?
 func file_exists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -114,6 +120,7 @@ func file_exists(filename string) bool {
 	return !info.IsDir()
 }
 
+// Vytvori databazu ak neexistuje
 func create_db() {
 	fmt.Println("Create sqlite db")
 	if !file_exists("sqlite-database.db") {
@@ -128,12 +135,14 @@ func create_db() {
 	}
 }
 
+// Vypise vsetky prikazy pri interaktivnom rezime
 func help() {
 	for k, v := range commands {
 		fmt.Println(k + " - " + strconv.Itoa(v))
 	}
 }
 
+// Spusti SQL prikaz
 func execute_sql(sql_str string) {
 	fmt.Println("Executing SQL.")
 	stmt, err := db.Prepare(sql_str) // Prepare SQL Statement
@@ -144,12 +153,14 @@ func execute_sql(sql_str string) {
 	fmt.Println("SQL query was executed")
 }
 
+// Spusti SQL query a vrati jej riadky
 func execute_sql_query(sql_str string) *sql.Rows {
 	fmt.Println("Executing SQL query.")
 	rows, _ := db.Query(sql_str)
 	return rows
 }
 
+// Vlozi zaznam do tabulky drives
 func insert_drive_db(drive_letter string, ksuid string) {
 	sql_str := `INSERT INTO drives(drive_letter, drive_ksuid) 
 	VALUES (?, ?)`
@@ -164,6 +175,7 @@ func insert_drive_db(drive_letter string, ksuid string) {
 	}
 }
 
+// Vymaze zaznam z tabulky drives
 func delete_drive_db(ksuid string) {
 	fmt.Println("Mazanie drivu z tabulky")
 	sql_str := `DELETE FROM drives WHERE drive_ksuid=?`
@@ -178,6 +190,7 @@ func delete_drive_db(ksuid string) {
 	}
 }
 
+// Vlozi zaznam do tabulky backups
 func insert_backups_db(source string, destination string, cron string) {
 	exists, info := drive_db_exists_letter(string(destination))
 
@@ -198,6 +211,7 @@ func insert_backups_db(source string, destination string, cron string) {
 	}
 }
 
+// Cita riadky z txt suboru
 func read_file_lines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -213,6 +227,7 @@ func read_file_lines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// Zapise na drive .drive subor s ksuid
 func write_disk_identification(drive_letter string, ksuid string) {
 	currentTime := time.Now()
 
@@ -245,6 +260,7 @@ func gen_ksuid() string {
 	//fmt.Printf("github.com/segmentio/ksuid:     %s\n", id.String())
 }
 
+// Testujem kompresiu
 func start_backup(source string, destination_ksuid string) {
 	exists, info := drive_db_exists_ksuid(string(destination_ksuid))
 	if exists {
@@ -267,6 +283,7 @@ func start_backup(source string, destination_ksuid string) {
 	}
 }
 
+// Vypise zoznam driveov a ich stav
 func list_drives() {
 	drives := get_drives()
 
@@ -303,6 +320,7 @@ func list_drives() {
 	}
 }
 
+// main funkcia
 func main() {
 	create_db()
 	db, err = sql.Open("sqlite3", "./sqlite-database.db") // Open the created SQLite File
