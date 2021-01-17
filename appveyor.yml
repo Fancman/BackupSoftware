@@ -22,6 +22,7 @@ before_build:
   - set PATH=%GOPATH%\bin;C:\msys64\mingw64\bin;c:\go\bin;%PATH%
   - go version
   - go env
+  - dir
   - go get ./...
 
 build_script:
