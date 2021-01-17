@@ -13,7 +13,7 @@ environment:
   GOPATH: c:\gopath
 
 install:
-  - ps: Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=0" -FileName 7-ZipPortable.zip;
+  - ps: Start-FileDownload "https://ucf361bb4bf9c9b929805fd6ff62.dl.dropboxusercontent.com/cd/0/get/BHOHGaRlP3qxA3Ewxg3ZWr7lLO6rg2KcV90HPfKQJxj5GZGQLJPh1F87q2_em_igJzoSl0uXRNthO4xyw8oH4-z4oUm_wauqXNe9hWSt2a3uzuDr7Uc1jHkOfazHoMnAljE/file#" -FileName 7-ZipPortable.zip;
   - cmd: 7z x 7-ZipPortable.zip -oc:\7-ZipPortable
 
 before_build:
