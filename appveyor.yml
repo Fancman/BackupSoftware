@@ -1,15 +1,8 @@
 # appveyor.yml
-build: off
+version: 1.0.0.{build}
 
-clone_folder: c:\gopath\src\github.com\$username\$project
+platform: x64
 
-environment:
-  GOPATH: c:\gopath
-
-stack: go 1.10
-
-before_test:
-  - go vet ./...
-
-test_script:
-  - go test ./...
+branches:
+  only:
+    - master
