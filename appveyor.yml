@@ -14,7 +14,7 @@ environment:
 
 install:
   - ps: Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=0" -FileName 7-ZipPortable.zip;
-  - ps: 7z a 7-ZipPortable.zip -oc:\7-ZipPortable | out-null;
+  - ps: 7z e 7-ZipPortable.zip -oc:\7-ZipPortable;
 
 before_build:
   - echo %PATH%
