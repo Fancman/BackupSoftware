@@ -27,10 +27,9 @@ var db *sql.DB
 var err error
 
 type Backup struct {
-	id                int
-	source            string
-	destination_ksuid string
-	cron              string
+	id           int
+	source       string
+	destinations []string
 }
 
 // Returns records from table 'backups'
@@ -38,9 +37,9 @@ func find_backups(db *sql.DB) []Backup {
 	var id int
 	var source string
 	var destination_ksuid string
-	var cron string
+	//var cron string
 
-	rows, err := db.Query(`SELECT id, source, destination_ksuid, cron FROM backups;`)
+	rows, err := db.Query(`SELECT b.id, b.source, dr.drive_ksuid FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.id=de.drive_ksuid;`)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -49,13 +48,25 @@ func find_backups(db *sql.DB) []Backup {
 	var backups []Backup
 
 	for rows.Next() {
-		err := rows.Scan(&id, &source, &destination_ksuid, &cron)
+		var exists_in_backups = false
+
+		err := rows.Scan(&id, &source, &destination_ksuid)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		fmt.Println(id, source, destination_ksuid, cron)
-		backups = append(backups, Backup{id: id, source: source, destination_ksuid: destination_ksuid, cron: cron})
+		fmt.Println(id, source, destination_ksuid)
+
+		for k, v := range backups {
+			if v.id == id {
+				backups[k].destinations = append(backups[k].destinations, destination_ksuid)
+				exists_in_backups = true
+				break
+			}
+		}
+		if !exists_in_backups {
+			backups = append(backups, Backup{id: id, source: source, destinations: []string{destination_ksuid}})
+		}
 	}
 	if err := rows.Err(); err != nil {
 		fmt.Println(err)
@@ -320,6 +331,33 @@ func list_drives() {
 	}
 }
 
+// Get path to drive by ksuid
+func path2drive(ksuid string) string {
+	drives := get_drives()
+
+	if len(drives) > 0 {
+		for _, drive_letter := range drives {
+
+			fmt.Print(drive_letter)
+
+			if file_exists(drive_letter + ":/.drive") {
+				// ak ma .drive subor a nie je zapisane v db
+				lines, err := read_file_lines(drive_letter + ":/.drive")
+
+				if err != nil {
+					fmt.Printf("Error while reading a file: %s", err)
+				}
+
+				if ksuid == lines[0] {
+					return drive_letter
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
 func add_drive(drive_letter string) {
 	if !file_exists(drive_letter + ":/.drive") {
 		ksuid := gen_ksuid()
@@ -353,24 +391,29 @@ func main() {
 	execute_sql(`CREATE TABLE IF NOT EXISTS backups(
 		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 		'source' TEXT,
-		'destination_ksuid' TEXT,
 		'cron' TEXT
+	);`)
+
+	execute_sql(`CREATE TABLE IF NOT EXISTS destinations (
+		backup_id INTEGER NOT NULL,
+		drive_ksuid INTEGER NOT NULL
 	);`)
 
 	list_drives()
 
 	add_drive("D")
 
-	/*backups := find_backups(db)
+	backups := find_backups(db)
 
 	if len(backups) > 0 {
 		for _, b := range backups {
-			start_backup(b.source, b.destination_ksuid)
+			fmt.Printf("Backup is: %b %s %v", b.id, b.source, b.destinations)
+			//start_backup(b.source, b.destination_ksuid)
 		}
 	}
 
-	fmt.Println("STOP")
-	os.Exit(3)*/
+	//fmt.Println("STOP")
+	//os.Exit(3)
 
 	//execute_sql(db, `DROP TABLE IF EXISTS drives;`)
 
