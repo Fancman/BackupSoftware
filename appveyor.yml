@@ -14,8 +14,8 @@ environment:
 
 install:
   - ps: Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=1" -FileName 7-ZipPortable.zip;
-  - cmd: mkdir 7-ZipPortable
-  - cmd: 7z x 7-ZipPortable.zip -o%clone_folder%\buildOutput\7-ZipPortable
+  - cmd: mkdir buildOutput\7-ZipPortable
+  - cmd: 7z x 7-ZipPortable.zip -o buildOutput\7-ZipPortable
 
 before_build:
   - echo %PATH%
