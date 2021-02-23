@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -132,7 +133,7 @@ func file_exists(filename string) bool {
 
 // Creates database if doesnt exist
 func create_db() {
-	fmt.Println("Create sqlite db")
+	//fmt.Println("Create sqlite db")
 	if !file_exists("sqlite-database.db") {
 		file, err := os.Create("sqlite-database.db")
 		if err != nil {
@@ -141,7 +142,7 @@ func create_db() {
 		file.Close()
 		fmt.Println("sqlite-database.db created")
 	} else {
-		fmt.Println("sqlite-database.db already exists")
+		//fmt.Println("sqlite-database.db already exists")
 	}
 }
 
@@ -154,18 +155,18 @@ func help() {
 
 // Executes SQL commans
 func execute_sql(sql_str string) {
-	fmt.Println("Executing SQL.")
+	//fmt.Println("Executing SQL.")
 	stmt, err := db.Prepare(sql_str) // Prepare SQL Statement
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	stmt.Exec() // Execute SQL Statements
-	fmt.Println("SQL query was executed")
+	//fmt.Println("SQL query was executed")
 }
 
 // Executes SQL commans and returns its rows
 func execute_sql_query(sql_str string) *sql.Rows {
-	fmt.Println("Executing SQL query.")
+	//fmt.Println("Executing SQL query.")
 	rows, _ := db.Query(sql_str)
 	return rows
 }
@@ -187,7 +188,7 @@ func insert_drive_db(ksuid string) {
 
 // Removes record from drives table
 func delete_drive_db(ksuid string) {
-	fmt.Println("Delete from drives table by ksuid")
+	//fmt.Println("Delete from drives table by ksuid")
 	sql_str := `DELETE FROM drives WHERE drive_ksuid=?`
 	stmt, err := db.Prepare(sql_str) // Prepare statement.
 	// This is good to avoid SQL injections
@@ -247,7 +248,7 @@ func write_disk_identification(drive_letter string, ksuid string) {
 	}
 
 	file, err := os.OpenFile(drive_letter+":/.drive", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	fmt.Println("Creating .drive file on th path: " + drive_letter + ":/.drive")
+	//fmt.Println("Creating .drive file on th path: " + drive_letter + ":/.drive")
 	if err != nil {
 		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
 		delete_drive_db(ksuid)
@@ -270,25 +271,48 @@ func gen_ksuid() string {
 }
 
 // Testing compression
-func start_backup(source string, destination_ksuid string) {
-	exists, db_drive_ksuid := drive_db_exists_ksuid(string(destination_ksuid))
-	if exists {
-		args := []string{"a", "-t7z", db_drive_ksuid + ":/backup/test.7zip", source}
-		//" a -t7z '"+info[0]+":/backup/test.7zip' '"+source+"'"
-		//args..
-		//fmt.Println("a -t7z " + info[0] + ":\backup\test.7zip " + source)
-		cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
-		//cmd := exec.Command("ls", "-lah")
-		//cmd := exec.Command("C:/Users/fancy/go/src/bakalarska praca/7z/7z-portable.exe", args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err := cmd.Run()
-		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
+func start_backup(id int, source string, destinations []string) {
+	if len(destinations) == 1 {
+		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0])
+
+		if exists {
+			drive_letter := path2drive(db_drive_ksuid)
+			dt := time.Now()
+
+			dest_path := drive_letter + ":/backup/" + strconv.Itoa(id) + dt.Format("01-02-2006 15-04-05")
+
+			//fmt.Printf('Cesta zalohy: %s', dest_path)
+
+			err := os.Mkdir(dest_path, 0755)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+				fmt.Println("Destination: " + dest_path + "/" + info.Name() + ".7z")
+				fmt.Println("Source: " + source)
+
+				args := []string{"a", "-t7z", dest_path + "/" + info.Name() + ".7z", source}
+
+				//fmt.Printf("Cesta zalohy: %s", path)
+
+				cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err = cmd.Run()
+				if err != nil {
+					log.Fatalf("cmd.Run() failed with %s\n", err)
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				panic(err)
+			}
+
 		}
-		/*if err := cmd.Start(); err != nil {
-			fmt.Println(err)
-		}*/
 	}
 }
 
@@ -338,7 +362,7 @@ func path2drive(ksuid string) string {
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
 
-			fmt.Print(drive_letter)
+			//fmt.Print(drive_letter)
 
 			if file_exists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
@@ -399,16 +423,16 @@ func main() {
 		drive_ksuid INTEGER NOT NULL
 	);`)
 
-	list_drives()
+	//list_drives()
 
-	add_drive("D")
+	//add_drive("D")
 
 	backups := find_backups(db)
 
 	if len(backups) > 0 {
 		for _, b := range backups {
-			fmt.Printf("Backup is: %b %s %v", b.id, b.source, b.destinations)
-			//start_backup(b.source, b.destination_ksuid)
+			//fmt.Printf("Backup is: %b %s %v", b.id, b.source, b.destinations)
+			start_backup(b.id, b.source, b.destinations)
 		}
 	}
 
