@@ -33,7 +33,7 @@ build_script:
 
   # Artifacts Configuration    #
 artifacts: # push all files in directory
-  path: build\*.exe
+  path: buildOutput\*.exe
   name: installer
 # Deploy to GitHub Releases
   
