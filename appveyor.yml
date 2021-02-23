@@ -40,14 +40,16 @@ artifacts: # push all files in directory
 # Deploy to GitHub Releases
   
 deploy:
-  release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
+  #release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
+  release: Backup Software - DEV version
   description: 'Release description'
   provider: GitHub
   auth_token:
     secure: awRHVY0L1MODweHZoCISezWyO9AfhKElTWorVXCw1oMi6KXKvQqH8TFtO6YqCrpK # your encrypted token from GitHub
   artifact: App
-  draft: true
-  prerelease: true
+  draft: false
+  prerelease: false
+  force_update: true
   on:
     branch: master                 # release from master branch only
   #  APPVEYOR_REPO_TAG: true        # deploy on tag push only
