@@ -15,7 +15,7 @@ environment:
 install:
   - ps: Start-FileDownload "https://www.dropbox.com/s/2ps67souqun8i29/7-ZipPortable.zip?dl=1" -FileName 7-ZipPortable.zip;
   - cmd: mkdir 7-ZipPortable
-  - cmd: 7z x 7-ZipPortable.zip -o%clone_folder%\7-ZipPortable
+  - cmd: 7z x 7-ZipPortable.zip -o%clone_folder%\buildOutput\7-ZipPortable
 
 before_build:
   - echo %PATH%
@@ -28,22 +28,24 @@ before_build:
   - go get ./...
 
 build_script:
-  - go build -o buildOutput\myapp.exe -i .
+  - go build -o buildOutput\BackupSoftware.exe -i .
 
+after_build:
+  - cmd : 7z a BackupSoftware.zip buildOutput\
 
   # Artifacts Configuration    #
 artifacts: # push all files in directory
-  path: buildOutput\*.exe
-  name: installer
+  path: BackupSoftware.zip
+  name: App
 # Deploy to GitHub Releases
   
 deploy:
-  release: myproduct-v$(APPVEYOR_BUILD_VERSION)
+  release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
   description: 'Release description'
   provider: GitHub
   auth_token:
     secure: awRHVY0L1MODweHZoCISezWyO9AfhKElTWorVXCw1oMi6KXKvQqH8TFtO6YqCrpK # your encrypted token from GitHub
-  artifact: installer # upload all NuGet packages to release assets
+  artifact: App
   draft: false
   prerelease: false
   on:
