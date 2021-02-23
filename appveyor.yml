@@ -31,7 +31,7 @@ build_script:
   - go build -o buildOutput\BackupSoftware.exe -i .
 
 after_build:
-  - cmd : 7z a BackupSoftware.zip buildOutput\
+  - cmd : 7z a BackupSoftware.zip \buildOutput\*
 
   # Artifacts Configuration    #
 artifacts: # push all files in directory
