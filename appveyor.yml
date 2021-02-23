@@ -1,5 +1,5 @@
 # appveyor.yml
-version: 1.0.0.{build}
+version: 0.0.1.{build}
 
 platform: x64
 
@@ -42,6 +42,7 @@ artifacts: # push all files in directory
 deploy:
   #release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
   release: Backup Software - DEV version
+  tag: BackupSoftware-DEV
   description: 'Release description'
   provider: GitHub
   auth_token:
