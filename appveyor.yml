@@ -28,4 +28,25 @@ before_build:
   - go get ./...
 
 build_script:
-  - go build -o buildOutput\myapp -i .
+  - go build -o buildOutput\myapp.exe -i .
+
+
+  # Artifacts Configuration    #
+artifacts: # push all files in directory
+  path: build\*.exe
+  name: installer
+# Deploy to GitHub Releases
+  
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: awRHVY0L1MODweHZoCISezWyO9AfhKElTWorVXCw1oMi6KXKvQqH8TFtO6YqCrpK
+  artifact: installer, portable
+  draft: true
+  prerelease: true
+  description: "describe the plugin here"  (mandatory - added later)
+#  tag: $(APPVEYOR_REPO_TAG_NAME) # will not work until tag is pushed
+  on:
+    #configuration: Release    # Debug contains non-redist MS DLLs
+    #APPVEYOR_REPO_TAG: true   # deploy on tag push only
+    branch: master   # release from master branch only
