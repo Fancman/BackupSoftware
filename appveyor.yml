@@ -46,8 +46,8 @@ deploy:
   auth_token:
     secure: awRHVY0L1MODweHZoCISezWyO9AfhKElTWorVXCw1oMi6KXKvQqH8TFtO6YqCrpK # your encrypted token from GitHub
   artifact: App
-  draft: false
-  prerelease: false
+  draft: true
+  prerelease: true
   on:
     branch: master                 # release from master branch only
   #  APPVEYOR_REPO_TAG: true        # deploy on tag push only
