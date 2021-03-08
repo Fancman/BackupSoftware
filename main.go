@@ -4,10 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -27,20 +24,27 @@ var commands = map[string]int{
 var db *sql.DB
 var err error
 
+type Destination struct {
+	ksuid string
+	path  string
+}
+
 type Backup struct {
 	id           int
 	source       string
-	destinations []string
+	destinations []Destination
 }
 
 // Returns records from table 'backups'
-func find_backups(db *sql.DB) []Backup {
+func find_backups(db *sql.DB, backup_id int) []Backup {
 	var id int
 	var source string
 	var destination_ksuid string
+	var path string
 	//var cron string
+	stmt := `SELECT b.id, b.source, dr.drive_ksuid, de.path FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.drive_ksuid=de.drive_ksuid WHERE b.id = ?;`
 
-	rows, err := db.Query(`SELECT b.id, b.source, dr.drive_ksuid FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.id=de.drive_ksuid;`)
+	rows, err := db.Query(stmt, backup_id)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -51,7 +55,7 @@ func find_backups(db *sql.DB) []Backup {
 	for rows.Next() {
 		var exists_in_backups = false
 
-		err := rows.Scan(&id, &source, &destination_ksuid)
+		err := rows.Scan(&id, &source, &destination_ksuid, &path)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -60,15 +64,17 @@ func find_backups(db *sql.DB) []Backup {
 
 		for k, v := range backups {
 			if v.id == id {
-				backups[k].destinations = append(backups[k].destinations, destination_ksuid)
+				backups[k].destinations = append(backups[k].destinations, Destination{ksuid: destination_ksuid, path: path})
 				exists_in_backups = true
 				break
 			}
 		}
 		if !exists_in_backups {
-			backups = append(backups, Backup{id: id, source: source, destinations: []string{destination_ksuid}})
+			destionation := Destination{ksuid: destination_ksuid, path: path}
+			backups = append(backups, Backup{id: id, source: source, destinations: []Destination{destionation}})
 		}
 	}
+
 	if err := rows.Err(); err != nil {
 		fmt.Println(err)
 	}
@@ -202,24 +208,50 @@ func delete_drive_db(ksuid string) {
 }
 
 // Inserts record into drives table
-func insert_backups_db(source string, dest_drive_ksuid string, cron string) {
+func insert_backups_db(source string, dest_drive_ksuid string, path string) error {
 	exists, db_drive_ksuid := drive_db_exists_ksuid(dest_drive_ksuid)
 
 	if exists {
-		sql_str := `INSERT INTO backups(source, destination_ksuid, cron) 
-		VALUES (?, ?, ?)`
+		sql_str := `INSERT INTO backups(source) 
+		VALUES (?)`
 		stmt, err := db.Prepare(sql_str) // Prepare statement.
 		// This is good to avoid SQL injections
 		if err != nil {
 			fmt.Println(err.Error())
+			return err
 		}
-		_, err = stmt.Exec(source, db_drive_ksuid, cron)
+		res, err := stmt.Exec(source)
 		if err != nil {
 			fmt.Println(err.Error())
+			return err
 		}
+		id, err := res.LastInsertId()
+
+		if err != nil {
+			return err
+		}
+
+		sql_str = `INSERT INTO destinations(backup_id, drive_ksuid, path)
+		VALUES (?, ?, ?)`
+		stmt, err = db.Prepare(sql_str)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+
+		_, err = stmt.Exec(id, db_drive_ksuid, path)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+
 	} else {
 		fmt.Println("Disk nie je v databaze")
 	}
+
+	return nil
 }
 
 // Reads lines from text file
@@ -271,19 +303,19 @@ func gen_ksuid() string {
 }
 
 // Testing compression
-func start_backup(id int, source string, destinations []string) {
+func start_backup(id int, source string, destinations []Destination) {
 	if len(destinations) == 1 {
-		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0])
+		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
 
 		if exists {
 			drive_letter := path2drive(db_drive_ksuid)
-			dt := time.Now()
+			//dt := time.Now()
 
-			dest_path := drive_letter + ":/backup/" + strconv.Itoa(id) + dt.Format("01-02-2006 15-04-05")
+			dest_path := drive_letter + ":/" + destinations[0].path + "/" + strconv.Itoa(id)
 
-			//fmt.Printf('Cesta zalohy: %s', dest_path)
+			fmt.Printf("Cesta zalohy: %s", dest_path)
 
-			err := os.Mkdir(dest_path, 0755)
+			/*err := os.Mkdir(dest_path, 0755)
 
 			if err != nil {
 				log.Fatal(err)
@@ -295,8 +327,6 @@ func start_backup(id int, source string, destinations []string) {
 
 				args := []string{"a", "-t7z", dest_path + "/" + info.Name() + ".7z", source}
 
-				//fmt.Printf("Cesta zalohy: %s", path)
-
 				cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
@@ -306,7 +336,7 @@ func start_backup(id int, source string, destinations []string) {
 				}
 
 				return nil
-			})
+			})*/
 
 			if err != nil {
 				panic(err)
@@ -414,20 +444,26 @@ func main() {
 
 	execute_sql(`CREATE TABLE IF NOT EXISTS backups(
 		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		'source' TEXT,
-		'cron' TEXT
+		'source' TEXT
 	);`)
 
 	execute_sql(`CREATE TABLE IF NOT EXISTS destinations (
 		backup_id INTEGER NOT NULL,
-		drive_ksuid INTEGER NOT NULL
+		drive_ksuid INTEGER NOT NULL,
+		'path' TEXT
 	);`)
+
+	//insert_backups_db(path.Clean("C:/Users/tomas/Pictures/Backgrounds"), "1mC60uVtv07vvPY4ylFkaXlc4b9", path.Clean("backup"))
 
 	//list_drives()
 
-	//add_drive("D")
+	//add_drive("F")
 
-	backups := find_backups(db)
+	//insert_backups_db(source string, dest_drive_ksuid string, path string)
+
+	backups := find_backups(db, 3)
+
+	fmt.Println("floor")
 
 	if len(backups) > 0 {
 		for _, b := range backups {
