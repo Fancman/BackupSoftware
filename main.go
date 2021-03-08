@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -34,6 +35,49 @@ type Backup struct {
 	id           int
 	source       string
 	destinations []Destination
+}
+
+// Returns records from table 'backups'
+func find_backup(db *sql.DB, backup_id int) Backup {
+	var id int
+	var source string
+	var destination_ksuid string
+	var path string
+	//var cron string
+	stmt := `SELECT b.id, b.source, dr.drive_ksuid, de.path FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.drive_ksuid=de.drive_ksuid WHERE b.id = ?;`
+
+	rows, err := db.Query(stmt, backup_id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+
+	var backup Backup
+	var i = 0
+
+	for rows.Next() {
+		err := rows.Scan(&id, &source, &destination_ksuid, &path)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println(id, source, destination_ksuid)
+		destionation := Destination{ksuid: destination_ksuid, path: path}
+
+		if i == 0 {
+			backup = Backup{id: id, source: source, destinations: []Destination{destionation}}
+		} else {
+			backup.destinations = append(backup.destinations, destionation)
+		}
+
+		i++
+	}
+
+	if err := rows.Err(); err != nil {
+		fmt.Println(err)
+	}
+
+	return backup
 }
 
 // Returns records from table 'backups'
@@ -303,6 +347,77 @@ func gen_ksuid() string {
 	//fmt.Printf("github.com/segmentio/ksuid:     %s\n", id.String())
 }
 
+func start_restore(id int, source string, destinations []Destination) error {
+	if len(destinations) == 1 {
+		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
+
+		if exists {
+			drive_letter := path2drive(db_drive_ksuid)
+
+			err := os.MkdirAll(filepath.Dir(source), os.ModePerm)
+
+			//fmt.Println(filepath.Dir(source))
+
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+
+			dest_path := drive_letter + ":/" + destinations[0].path
+
+			fmt.Printf("Cesta zalohy: %s", dest_path)
+
+			_, err = os.Stat(dest_path + "/" + strconv.Itoa(id) + ".7z")
+
+			if os.IsNotExist(err) {
+				return err
+			}
+
+			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+			if os.IsNotExist(err) {
+				return err
+			}
+
+			args := []string{"x", dest_path + "/" + strconv.Itoa(id) + ".7z", "-y", "-o" + source}
+
+			cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+
+			/*err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+				fmt.Println("Destination: " + dest_path + "/" + info.Name() + ".7z")
+				fmt.Println("Source: " + source)
+
+				args := []string{"a", "-t7z", dest_path + "/" + info.Name() + ".7z", source}
+
+				cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+
+				return nil
+			})*/
+
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+
+		}
+	}
+
+	return nil
+}
+
 // Testing compression
 func start_backup(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
@@ -340,7 +455,7 @@ func start_backup(id int, source string, destinations []Destination) error {
 				return err
 			}
 
-			args := []string{"a", "-t7z", dest_path + "/" + strconv.Itoa(id) + ".7z", source}
+			args := []string{"a", "-t7z", dest_path + "/" + strconv.Itoa(id) + ".7z", source + "/*"}
 
 			cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
 			cmd.Stdout = os.Stdout
@@ -494,16 +609,21 @@ func main() {
 
 	//insert_backups_db(source string, dest_drive_ksuid string, path string)
 
-	backups := find_backups(db, 3)
+	//backup := find_backup(db, 3)
+	//start_backup(backup.id, backup.source, backup.destinations)
+	//start_restore(backup.id, backup.source, backup.destinations)
+
+	/*backups := find_backups(db, 3)
 
 	fmt.Println("floor")
 
 	if len(backups) > 0 {
 		for _, b := range backups {
 			//fmt.Printf("Backup is: %b %s %v", b.id, b.source, b.destinations)
-			start_backup(b.id, b.source, b.destinations)
+			//start_backup(b.id, b.source, b.destinations)
+			start_restore(b.id, b.source, b.destinations)
 		}
-	}
+	}*/
 
 	//fmt.Println("STOP")
 	//os.Exit(3)
