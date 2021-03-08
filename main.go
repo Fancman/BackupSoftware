@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -303,7 +304,7 @@ func gen_ksuid() string {
 }
 
 // Testing compression
-func start_backup(id int, source string, destinations []Destination) {
+func start_backup(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
 		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
 
@@ -311,17 +312,46 @@ func start_backup(id int, source string, destinations []Destination) {
 			drive_letter := path2drive(db_drive_ksuid)
 			//dt := time.Now()
 
-			dest_path := drive_letter + ":/" + destinations[0].path + "/" + strconv.Itoa(id)
+			dest_path := drive_letter + ":/" + destinations[0].path
 
 			fmt.Printf("Cesta zalohy: %s", dest_path)
 
-			/*err := os.Mkdir(dest_path, 0755)
+			err := os.MkdirAll(dest_path, os.ModePerm)
 
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err.Error())
 			}
 
-			err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+			// strconv.Itoa(id) nazov archivu
+
+			info, err := os.Stat(source)
+			if os.IsNotExist(err) {
+				fmt.Println("File does not exist.")
+			}
+			if info.IsDir() {
+				fmt.Println("temp is a directory")
+			} else {
+				fmt.Println("temp is a file")
+			}
+
+			info, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+			if os.IsNotExist(err) {
+				return err
+			}
+
+			args := []string{"a", "-t7z", dest_path + "/" + strconv.Itoa(id) + ".7z", source}
+
+			cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+
+			/*err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 				fmt.Println("Destination: " + dest_path + "/" + info.Name() + ".7z")
 				fmt.Println("Source: " + source)
 
@@ -332,18 +362,21 @@ func start_backup(id int, source string, destinations []Destination) {
 				cmd.Stderr = os.Stderr
 				err = cmd.Run()
 				if err != nil {
-					log.Fatalf("cmd.Run() failed with %s\n", err)
+					fmt.Println(err.Error())
 				}
 
 				return nil
 			})*/
 
 			if err != nil {
-				panic(err)
+				fmt.Println(err.Error())
+				return err
 			}
 
 		}
 	}
+
+	return nil
 }
 
 // Lists drives and their statuses
