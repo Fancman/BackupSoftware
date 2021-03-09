@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -14,7 +16,10 @@ func someFunc() error {
 
 var (
 	// Used for flags.
-	db = open_conn()
+	db               = open_conn()
+	source           string
+	dest_drive_ksuid string
+	dest_path        string
 
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
@@ -46,6 +51,54 @@ var (
 		},
 	}
 
+	addDriveCmd = &cobra.Command{
+		Use:   "add-drive [drive_letter_identification]",
+		Short: "Add drive to db and create .drive",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if len(args) != 1 {
+				return errors.New("You have to enter exactly one drive indetification.")
+			}
+
+			add_drive((args[0]))
+
+			return nil
+		},
+	}
+
+	startBackupCmd = &cobra.Command{
+		Use:   "start-backup [backup id]",
+		Short: "Start backup from record in db by its id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if len(args) != 1 {
+				return errors.New("You have to enter exactly one drive indetification.")
+			}
+
+			i, err := strconv.Atoi(args[0])
+
+			if err != nil {
+				return errors.New("Entered backup id have to be an integer type")
+			}
+
+			backup := find_backup(db, i)
+			start_backup(backup.id, backup.source, backup.destinations)
+
+			return nil
+		},
+	}
+
+	createBackupCmd = &cobra.Command{
+		Use:   "create-backup",
+		Short: "Create backup record",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			insert_backups_db(source, dest_drive_ksuid, dest_path)
+			return nil
+		},
+	}
+
+	//insert_backups_db(source string, dest_drive_ksuid string, path string)
+
 	rootCmd = &cobra.Command{
 		Use:   "Backupsoft",
 		Short: "Simple 7z backup utility",
@@ -72,7 +125,14 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(listDrivesCmd)
 	rootCmd.AddCommand(listBackupsCmd)
-	rootCmd.AddCommand(singleCmd)
+	rootCmd.AddCommand(addDriveCmd)
+	rootCmd.AddCommand(createBackupCmd)
+
+	createBackupCmd.Flags().StringVarP(&source, "source", "a", "", "source path")
+	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "b", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "c", "", "additional path")
+
+	rootCmd.AddCommand(startBackupCmd)
 	//singleCmd.Flags().StringVarP(&options.File, "file", "f", "", "file containing urls. use - for stdin")
 	//rootCmd.AddCommand(rootCmd)
 }

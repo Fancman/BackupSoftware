@@ -142,7 +142,7 @@ func list_backups(db *sql.DB) []Backup {
 			fmt.Println(err)
 		}
 
-		fmt.Println(id, source, destination_ksuid)
+		//fmt.Println(id, source, destination_ksuid)
 
 		for k, v := range backups {
 			if v.id == id {
