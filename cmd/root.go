@@ -14,25 +14,42 @@ func someFunc() error {
 
 var (
 	// Used for flags.
-	cfgFile     string
-	userLicense string
+	db = open_conn()
 
-	tryCmd = &cobra.Command{
-		Use:   "try",
-		Short: "Try and possibly fail at something",
+	listBackupsCmd = &cobra.Command{
+		Use:   "list-backups",
+		Short: "List stored backup records",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := someFunc(); err != nil {
-				return err
+			backups := list_backups(db)
+
+			if len(backups) > 0 {
+				for _, b := range backups {
+					fmt.Printf("[id]: %b, [source]: %s, [destinations]: %v", b.id, b.source, b.destinations)
+				}
 			}
+
+			return nil
+		},
+	}
+
+	listDrivesCmd = &cobra.Command{
+		Use:   "list-drives",
+		Short: "List available drives",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			/*if len(args) == 0 {
+				return errors.New("You have to enter target of action.")
+			}*/
+
+			list_drives()
+
 			return nil
 		},
 	}
 
 	rootCmd = &cobra.Command{
-		Use:   "backp",
+		Use:   "Backupsoft",
 		Short: "Simple 7z backup utility",
-		Long: `backp is a distributed backup utility
-		using 7z as its tool for archiving.`,
+		Long:  `Backupsoft is a distributed backup utility using 7z as its tool for archiving.`,
 	}
 	singleCmd = &cobra.Command{
 		Use:   "single [URL]",
@@ -53,7 +70,9 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.AddCommand(tryCmd)
+	rootCmd.AddCommand(listDrivesCmd)
+	rootCmd.AddCommand(listBackupsCmd)
 	rootCmd.AddCommand(singleCmd)
+	//singleCmd.Flags().StringVarP(&options.File, "file", "f", "", "file containing urls. use - for stdin")
 	//rootCmd.AddCommand(rootCmd)
 }
