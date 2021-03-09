@@ -88,10 +88,33 @@ var (
 		},
 	}
 
+	startRestoreCmd = &cobra.Command{
+		Use:   "start-restore [backup id]",
+		Short: "Start restore from record in db by its id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if len(args) != 1 {
+				return errors.New("You have to enter exactly one drive indetification.")
+			}
+
+			i, err := strconv.Atoi(args[0])
+
+			if err != nil {
+				return errors.New("Entered backup id have to be an integer type")
+			}
+
+			backup := find_backup(db, i)
+			start_restore(backup.id, backup.source, backup.destinations)
+
+			return nil
+		},
+	}
+
 	createBackupCmd = &cobra.Command{
-		Use:   "create-backup",
+		Use:   "create-backup -s [source] -d [destination drive] -p [path]",
 		Short: "Create backup record",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			//fmt.Println(source, dest_drive_ksuid, dest_path)
 			insert_backups_db(source, dest_drive_ksuid, dest_path)
 			return nil
 		},
@@ -128,11 +151,12 @@ func init() {
 	rootCmd.AddCommand(addDriveCmd)
 	rootCmd.AddCommand(createBackupCmd)
 
-	createBackupCmd.Flags().StringVarP(&source, "source", "a", "", "source path")
-	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "b", "", "destination drive ksuid")
-	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "c", "", "additional path")
+	createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
+	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "d", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")
 
 	rootCmd.AddCommand(startBackupCmd)
+	rootCmd.AddCommand(startRestoreCmd)
 	//singleCmd.Flags().StringVarP(&options.File, "file", "f", "", "file containing urls. use - for stdin")
 	//rootCmd.AddCommand(rootCmd)
 }
