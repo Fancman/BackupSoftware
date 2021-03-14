@@ -9,11 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func someFunc() error {
-	fmt.Println("balalala")
-	return nil
-}
-
 var (
 	// Used for flags.
 	db               = open_conn()
@@ -112,7 +107,7 @@ var (
 
 	createBackupCmd = &cobra.Command{
 		Use:   "create-backup -s [source] -d [destination drive] -p [path]",
-		Short: "Create backup record",
+		Short: "Create backup record -s [source] -d [destination drive] -p [path]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
 			insert_backups_db(source, dest_drive_ksuid, dest_path)
@@ -157,6 +152,7 @@ func init() {
 
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(startRestoreCmd)
+
 	//singleCmd.Flags().StringVarP(&options.File, "file", "f", "", "file containing urls. use - for stdin")
 	//rootCmd.AddCommand(rootCmd)
 }

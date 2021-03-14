@@ -376,6 +376,7 @@ func list_drives() {
 				//_ = info
 
 				// If .drive exists but isnt in db
+				fmt.Print(" - " + string(lines[0]))
 				if !exists && info == "" {
 					insert_drive_db(string(lines[0]))
 					fmt.Print(" - Drive has .drive file but werent in drives table.")
@@ -432,39 +433,4 @@ func add_drive(drive_letter string) {
 		}
 	}
 
-}
-
-// main funkcia
-func main() {
-
-	//insert_backups_db(path.Clean("C:/Users/tomas/Pictures/Backgrounds"), "1mC60uVtv07vvPY4ylFkaXlc4b9", path.Clean("backup"))
-
-	//list_drives()
-
-	//add_drive("F")
-
-	//insert_backups_db(source string, dest_drive_ksuid string, path string)
-
-	//backup := find_backup(db, 3)
-	//start_backup(backup.id, backup.source, backup.destinations)
-	//start_restore(backup.id, backup.source, backup.destinations)
-
-	/*backups := find_backups(db, 3)
-
-	fmt.Println("floor")
-
-	if len(backups) > 0 {
-		for _, b := range backups {
-			//fmt.Printf("Backup is: %b %s %v", b.id, b.source, b.destinations)
-			//start_backup(b.id, b.source, b.destinations)
-			start_restore(b.id, b.source, b.destinations)
-		}
-	}*/
-
-	//fmt.Println("STOP")
-	//os.Exit(3)
-
-	//execute_sql(db, `DROP TABLE IF EXISTS drives;`)
-
-	//fmt.Println(getdrives())
 }

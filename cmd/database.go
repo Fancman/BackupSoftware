@@ -31,6 +31,7 @@ func create_db() {
 		}
 		file.Close()
 		fmt.Println("sqlite-database.db created")
+
 	} else {
 		//fmt.Println("sqlite-database.db already exists")
 	}
@@ -46,12 +47,27 @@ func open_conn() (db *sql.DB) {
 	}
 
 	//defer db.Close() // Defer Closing the database
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS drives(
+		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+		'drive_ksuid' TEXT
+	);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS backups(
+		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+		'source' TEXT
+	);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS destinations (
+		backup_id INTEGER NOT NULL,
+		drive_ksuid INTEGER NOT NULL,
+		path TEXT
+	);`)
 
 	return db
 }
 
 // Executes SQL commans
-func execute_sql(sql_str string) {
+func execute_sql(db *sql.DB, sql_str string) {
 	//fmt.Println("Executing SQL.")
 	stmt, err := db.Prepare(sql_str) // Prepare SQL Statement
 	if err != nil {
