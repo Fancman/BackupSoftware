@@ -1,0 +1,53 @@
+* TODO Check user input in ~add-drive~
+  It should be one alphabetic letter ~(l < 'a' || l > 'z') && (l < 'A' || l >
+  'Z')~.
+* TODO Choose place for database
+  E.g. user profile. In Windows it's =%APPDATA%\BackupSoft\db.sqlite=.
+* TODO Change module path to github.com
+  Use github path =github.com/Fancman/BackupSoftware= in go.mod.
+* TODO In ~create-backup~ command use drive letter instead of uid
+  Ability to choose drive by uid may be added later in a separate switch.
+* TODO Use 7z from PATH if available
+* TODO Model improvement proposal
+  - [ ] Use similar format for source as destination in backups (source drive ID
+    and path), so that external drives can be also considered as sources and can
+    work even when drive letter doesn't match.
+  - [ ] Add field ='name' TEXT= to =drives= table (see below).
+  - [ ] =drive-ksuid= should be primary key of drives (no need to have two IDs).
+  - [ ] Allow more paths to be contained in one archive (m:n relation
+    backup:destination).
+  - [ ] Save timestamp of last backup for each individual path on each drive (so
+    that user can see when was a specific path backed up on a specific drive).
+** New model
+  - use singular table naming -- shorter SQL statements and better for possible
+    ORM
+  - rename destinations to source (or something that better decsribes it)
+  - add human-friendly name to drive
+  - allow m:n relation between backup:source
+  - allow m:n relation between source:drive (to know when was some path backed
+    up on which drive)
+
+  - TABLE drive:
+    - PK drive_ksuid (INTEGER)
+    - name (TEXT) -- this should be human-friendly name (e.g. "seagate drive")
+  - TABLE archive:
+    - PK id
+    - name (TEXT) -- this will be used as the file name (It should probably
+      include file extension that will enforce archiving/compression type (e.g.
+      name="photos-2020.7z"). Otherwise we need another field with backup type.)
+  - TABLE backup:
+    - PK archive+drive
+    - FK archive
+    - FK drive    -- on which drive is the archive *stored*
+    - path (TEXT) -- this should be relative path to a folder on the drive
+  - TABLE source
+    - PK id
+    - FK archive
+    - FK drive    -- *source* drive
+    - path (TEXT) -- relative path to a folder/file on drive that's being backed
+      up
+  - TABLE timestamp
+    - PK source+drive
+    - FK source
+    - FK drive
+    - datetime (INTEGER is probably most efficient)
