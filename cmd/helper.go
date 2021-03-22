@@ -12,6 +12,14 @@ func gen_ksuid() string {
 	return ksuid.New().String()
 }
 
+func get_appdata_dir() (string, error) {
+	path, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
 // Reads lines from text file
 func read_file_lines(path string) ([]string, error) {
 	file, err := os.Open(path)

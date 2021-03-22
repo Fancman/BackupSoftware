@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // Removes record from drives table
@@ -22,25 +23,48 @@ func delete_drive_db(ksuid string) {
 }
 
 // Creates database if doesnt exist
-func create_db() {
-	//fmt.Println("Create sqlite db")
-	if !file_exists("sqlite-database.db") {
-		file, err := os.Create("sqlite-database.db")
+func create_db() (string, error) {
+	appdata_path, err := get_appdata_dir()
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return appdata_path, err
+	}
+
+	var database_path = appdata_path + "/BackupSoft/sqlite-database.db"
+
+	//fmt.Println(database_path)
+
+	if !file_exists(database_path) {
+		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)
+
 		if err != nil {
 			fmt.Println(err.Error())
+			return database_path, err
 		}
+
+		file, err := os.Create(database_path)
+		if err != nil {
+			fmt.Println(err.Error())
+			return database_path, err
+		}
+
 		file.Close()
 		fmt.Println("sqlite-database.db created")
 
-	} else {
-		//fmt.Println("sqlite-database.db already exists")
 	}
+
+	return database_path, nil
 }
 
 func open_conn() (db *sql.DB) {
-	create_db()
+	database_path, err := create_db()
 
-	db, err = sql.Open("sqlite3", "./sqlite-database.db") // Open the created SQLite File
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	db, err = sql.Open("sqlite3", database_path) // Open the created SQLite File
 
 	if err != nil {
 		fmt.Println(err)

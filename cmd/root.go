@@ -56,7 +56,7 @@ var (
 			}
 
 			if (args[0] < "a" || args[0] > "z") && (args[0] < "A" || args[0] > "Z") {
-				return errors.New("Typed argument is not a letter.")
+				return errors.New("Typed argument is not an alphabetic letter.")
 			}
 
 			add_drive((args[0]))
