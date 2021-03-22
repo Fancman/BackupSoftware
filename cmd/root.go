@@ -55,6 +55,10 @@ var (
 				return errors.New("You have to enter exactly one drive indetification.")
 			}
 
+			if (args[0] < "a" || args[0] > "z") && (args[0] < "A" || args[0] > "Z") {
+				return errors.New("Typed argument is not a letter.")
+			}
+
 			add_drive((args[0]))
 
 			return nil
