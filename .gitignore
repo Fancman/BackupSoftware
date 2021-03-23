@@ -4,3 +4,4 @@ sqlite-database.db
 m.exe
 .vscode
 #/7-ZipPortable/*
+*.exe

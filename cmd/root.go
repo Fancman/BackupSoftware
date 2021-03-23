@@ -11,10 +11,11 @@ import (
 
 var (
 	// Used for flags.
-	db               = open_conn()
-	source           string
-	dest_drive_ksuid string
-	dest_path        string
+	db                = open_conn()
+	source            string
+	dest_drive_ksuid  string
+	dest_drive_letter string
+	dest_path         string
 
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
@@ -110,11 +111,11 @@ var (
 	}
 
 	createBackupCmd = &cobra.Command{
-		Use:   "create-backup -s [source] -d [destination drive] -p [path]",
-		Short: "Create backup record -s [source] -d [destination drive] -p [path]",
+		Use:   "create-backup -s [source] -d [destination drive letter] -p [path]",
+		Short: "Create backup record -s [source] -d [destination drive letter] -p [path]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
-			insert_backups_db(source, dest_drive_ksuid, dest_path)
+			insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
 			return nil
 		},
 	}
@@ -151,7 +152,8 @@ func init() {
 	rootCmd.AddCommand(createBackupCmd)
 
 	createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
-	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "d", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_drive_letter, "destination drive letter", "d", "", "destination drive letter")
 	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")
 
 	rootCmd.AddCommand(startBackupCmd)

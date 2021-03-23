@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"os"
 
 	"github.com/segmentio/ksuid"
@@ -39,13 +41,38 @@ func read_file_lines(path string) ([]string, error) {
 // Returns list of available drives
 func get_drives() (r []string) {
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
-		f, err := os.Open(string(drive) + ":\\")
+		err := drive_exists(string(drive))
 		if err == nil {
 			r = append(r, string(drive))
-			f.Close()
 		}
 	}
 	return r
+}
+
+// Does drive exist?
+func drive_exists(drive_letter string) error {
+	f, err := os.Open(drive_letter + ":\\")
+	if err == nil {
+		f.Close()
+		return nil
+	}
+	return err
+}
+
+// Get ksuid form .drive file by drive letter
+func get_ksuid_from_drive(drive_letter string) (string, error) {
+	if file_exists(drive_letter + ":/.drive") {
+		// ak ma .drive subor a nie je zapisane v db
+		lines, err := read_file_lines(drive_letter + ":/.drive")
+
+		if err != nil {
+			fmt.Printf("Error while reading a file: %s", err)
+			return "", err
+		}
+
+		return lines[0], nil
+	}
+	return "", errors.New(".drive file doesn't exist on drive")
 }
 
 // File exists?

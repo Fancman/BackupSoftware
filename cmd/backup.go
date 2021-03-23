@@ -212,7 +212,7 @@ func start_restore(id int, source string, destinations []Destination) error {
 		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
 
 		if exists {
-			drive_letter := path2drive(db_drive_ksuid)
+			drive_letter := ksuid2drive(db_drive_ksuid)
 
 			err := os.MkdirAll(filepath.Dir(source), os.ModePerm)
 
@@ -284,8 +284,7 @@ func start_backup(id int, source string, destinations []Destination) error {
 		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
 
 		if exists {
-			drive_letter := path2drive(db_drive_ksuid)
-			//dt := time.Now()
+			drive_letter := ksuid2drive(db_drive_ksuid)
 
 			dest_path := drive_letter + ":/" + destinations[0].path
 
@@ -394,8 +393,21 @@ func list_drives() {
 	}
 }
 
+func drive_letter2ksuid(drive_letter string) (string, error) {
+	err := drive_exists(drive_letter)
+	if err == nil {
+		if file_exists(drive_letter + ":/.drive") {
+
+		}
+	} else {
+		return drive_letter, err
+	}
+
+	return drive_letter, nil
+}
+
 // Get path to drive by ksuid
-func path2drive(ksuid string) string {
+func ksuid2drive(ksuid string) string {
 	drives := get_drives()
 
 	if len(drives) > 0 {

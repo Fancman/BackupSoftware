@@ -1,4 +1,4 @@
-module backupsoft.com/m
+module github.com/Fancman/BackupSoftware
 
 go 1.16
 

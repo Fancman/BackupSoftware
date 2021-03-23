@@ -1,6 +1,6 @@
 package main
 
-import "backupsoft.com/m/cmd"
+import "github.com/Fancman/BackupSoftware/cmd"
 
 func main() {
 	cmd.Execute()

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -141,8 +142,21 @@ func drive_db_exists_ksuid(drive_ksuid string) (bool, string) {
 }
 
 // Inserts record into drives table
-func insert_backups_db(source string, dest_drive_ksuid string, path string) error {
-	exists, db_drive_ksuid := drive_db_exists_ksuid(dest_drive_ksuid)
+func insert_backups_db(source string, dest_drive_ksuid string, dest_drive_letter string, path string) error {
+	db_drive_ksuid := ""
+	exists := false
+
+	if len(dest_drive_letter) != 0 {
+		err := drive_exists(string(dest_drive_letter))
+		if err == nil {
+			db_drive_ksuid, err = get_ksuid_from_drive(dest_drive_letter)
+			exists = true
+		}
+	} else if len(dest_drive_ksuid) != 0 {
+		exists, db_drive_ksuid = drive_db_exists_ksuid(dest_drive_ksuid)
+	} else {
+		return errors.New("No input argument for backup destination")
+	}
 
 	if exists {
 		sql_str := `INSERT INTO backups(source) 
