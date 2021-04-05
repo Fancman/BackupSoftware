@@ -34,7 +34,7 @@ func create_db() (string, error) {
 
 	var database_path = appdata_path + "/BackupSoft/sqlite-database.db"
 
-	//fmt.Println(database_path)
+	fmt.Println(database_path)
 
 	if !file_exists(database_path) {
 		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)

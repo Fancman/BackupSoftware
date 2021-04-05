@@ -1,6 +1,3 @@
-* TODO In ~create-backup~ command use drive letter instead of uid
-  Ability to choose drive by uid may be added later in a separate switch.
-* TODO Use 7z from PATH if available
 * TODO Model improvement proposal
   - [ ] Use similar format for source as destination in backups (source drive ID
     and path), so that external drives can be also considered as sources and can
