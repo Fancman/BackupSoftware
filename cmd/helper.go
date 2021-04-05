@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/segmentio/ksuid"
 )
@@ -31,7 +32,7 @@ func read_file_lines(path string) ([]string, error) {
 	defer file.Close()
 
 	var lines []string
-	
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
@@ -48,6 +49,18 @@ func get_drives() (r []string) {
 		}
 	}
 	return r
+}
+
+func isCommandAvailable(name string) bool {
+	cmd := exec.Command(name)
+
+	err := cmd.Run()
+
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return true
 }
 
 // Does drive exist?

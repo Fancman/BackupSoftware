@@ -1,7 +1,10 @@
 package main
 
-import "github.com/Fancman/BackupSoftware/cmd"
+import (
+	"github.com/Fancman/BackupSoftware/cmd"
+)
 
 func main() {
+
 	cmd.Execute()
 }

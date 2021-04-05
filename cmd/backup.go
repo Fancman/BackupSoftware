@@ -233,15 +233,22 @@ func start_restore(id int, source string, destinations []Destination) error {
 				return err
 			}
 
-			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
-
-			if os.IsNotExist(err) {
-				return err
-			}
+			cmd7zExists := isCommandAvailable("7z")
+			path7z := "7z"
 
 			args := []string{"x", dest_path + "/" + strconv.Itoa(id) + ".7z", "-y", "-o" + source}
 
-			cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+			if !cmd7zExists {
+				_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+				if os.IsNotExist(err) {
+					return err
+				}
+
+				path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
+			}
+
+			cmd := exec.Command(path7z, args...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err = cmd.Run()
@@ -308,15 +315,21 @@ func start_backup(id int, source string, destinations []Destination) error {
 				fmt.Println("temp is a file")
 			}
 
-			info, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
-
-			if os.IsNotExist(err) {
-				return err
-			}
-
+			cmd7zExists := isCommandAvailable("7z")
+			path7z := "7z"
 			args := []string{"a", "-t7z", dest_path + "/" + strconv.Itoa(id) + ".7z", source + "/*"}
 
-			cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
+			if !cmd7zExists {
+				_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+				if os.IsNotExist(err) {
+					return err
+				}
+
+				path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
+			}
+
+			cmd := exec.Command(path7z, args...)
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err = cmd.Run()

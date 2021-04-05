@@ -111,8 +111,8 @@ var (
 	}
 
 	createBackupCmd = &cobra.Command{
-		Use:   "create-backup -s [source] -d [destination drive letter] -p [path] -",
-		Short: "Create backup record -s [source] -d [destination drive letter] -p [path]",
+		Use:   "create-backup -s [source] -d [destination drive letter] -p [path] | optional: -ksuid [drive ksuid]",
+		Short: "Create backup record by enetring drive letter or ksuid -s [source] -d [destination drive letter] -p [path] | optional: -ksuid [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
 			insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
@@ -139,6 +139,7 @@ var (
 
 // Execute executes the root command.
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -152,7 +153,7 @@ func init() {
 	rootCmd.AddCommand(createBackupCmd)
 
 	createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
-	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "ksuid", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
 	createBackupCmd.Flags().StringVarP(&dest_drive_letter, "destination drive letter", "d", "", "destination drive letter")
 	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")
 
