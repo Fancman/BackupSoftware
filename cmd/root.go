@@ -111,7 +111,7 @@ var (
 	}
 
 	createBackupCmd = &cobra.Command{
-		Use:   "create-backup -s [source] -d [destination drive letter] -p [path]",
+		Use:   "create-backup -s [source] -d [destination drive letter] -p [path] -",
 		Short: "Create backup record -s [source] -d [destination drive letter] -p [path]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
@@ -152,7 +152,7 @@ func init() {
 	rootCmd.AddCommand(createBackupCmd)
 
 	createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
-	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
+	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "ksuid", "", "destination drive ksuid")
 	createBackupCmd.Flags().StringVarP(&dest_drive_letter, "destination drive letter", "d", "", "destination drive letter")
 	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")
 
