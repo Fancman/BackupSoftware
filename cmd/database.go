@@ -75,6 +75,7 @@ func open_conn() (db *sql.DB) {
 	execute_sql(db, `CREATE TABLE IF NOT EXISTS drives(
 		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 		'drive_ksuid' TEXT
+		'name' TEXT
 	);`)
 
 	execute_sql(db, `CREATE TABLE IF NOT EXISTS backups(
@@ -85,7 +86,8 @@ func open_conn() (db *sql.DB) {
 	execute_sql(db, `CREATE TABLE IF NOT EXISTS destinations (
 		backup_id INTEGER NOT NULL,
 		drive_ksuid INTEGER NOT NULL,
-		path TEXT
+		path TEXT,
+		type VARCHAR(6)
 	);`)
 
 	return db
