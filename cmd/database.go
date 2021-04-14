@@ -72,22 +72,43 @@ func open_conn() (db *sql.DB) {
 	}
 
 	//defer db.Close() // Defer Closing the database
-	execute_sql(db, `CREATE TABLE IF NOT EXISTS drives(
-		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		'drive_ksuid' TEXT
-		'name' TEXT
-	);`)
-
-	execute_sql(db, `CREATE TABLE IF NOT EXISTS backups(
-		'id' integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		'source' TEXT
-	);`)
-
-	execute_sql(db, `CREATE TABLE IF NOT EXISTS destinations (
-		backup_id INTEGER NOT NULL,
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS drive (
 		drive_ksuid INTEGER NOT NULL,
-		path TEXT,
-		type VARCHAR(6)
+		name VARCHAR,
+		CONSTRAINT drive_PK PRIMARY KEY (drive_ksuid)
+	);
+	CREATE INDEX drive_drive_ksuid_IDX ON drive (drive_ksuid);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS archive (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name VARCHAR
+	);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS backup (
+		archive_id INTEGER,
+		drive_ksuid INTEGER,
+		"path" VARCHAR,
+		CONSTRAINT backup_PK PRIMARY KEY (archive_id,drive_ksuid),
+		CONSTRAINT backup_FK FOREIGN KEY (archive_id) REFERENCES archive(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+		CONSTRAINT backup_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid) ON DELETE RESTRICT ON UPDATE CASCADE
+	);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS "source" (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		archive_id INTEGER,
+		drive_ksuid INTEGER,
+		"path" VARCHAR,
+		CONSTRAINT source_FK FOREIGN KEY (id) REFERENCES archive(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+		CONSTRAINT source_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid) ON DELETE RESTRICT ON UPDATE CASCADE
+	);`)
+
+	execute_sql(db, `CREATE TABLE IF NOT EXISTS "timestamp" (
+		source_id INTEGER,
+		drive_ksuid INTEGER,
+		created_at timestamp DEFAULT (strftime('%s', 'now')) NOT NULL,
+		CONSTRAINT timestamp_PK PRIMARY KEY (source_id,drive_ksuid),
+		CONSTRAINT timestamp_FK FOREIGN KEY (source_id) REFERENCES "source"(id),
+		CONSTRAINT timestamp_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid)
 	);`)
 
 	return db

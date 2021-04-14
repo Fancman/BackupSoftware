@@ -1,4 +1,4 @@
-CREATE TABLE drive (
+CREATE TABLE IF NOT EXISTS drive (
 	drive_ksuid INTEGER NOT NULL,
 	name VARCHAR,
 	CONSTRAINT drive_PK PRIMARY KEY (drive_ksuid)
@@ -6,12 +6,12 @@ CREATE TABLE drive (
 CREATE INDEX drive_drive_ksuid_IDX ON drive (drive_ksuid);
 
 
-CREATE TABLE archive (
+CREATE TABLE IF NOT EXISTS archive (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name VARCHAR
 );
 
-CREATE TABLE backup (
+CREATE TABLE IF NOT EXISTS backup (
 	archive_id INTEGER,
 	drive_ksuid INTEGER,
 	"path" VARCHAR,
@@ -20,16 +20,16 @@ CREATE TABLE backup (
 	CONSTRAINT backup_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE TABLE "source" (
+CREATE TABLE IF NOT EXISTS "source" (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	archive_id INTEGER,
 	drive_ksuid INTEGER,
 	"path" VARCHAR,
-	CONSTRAINT source_FK FOREIGN KEY (id) REFERENCES archive(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+	CONSTRAINT source_FK FOREIGN KEY (archive_id) REFERENCES archive(id) ON DELETE RESTRICT ON UPDATE CASCADE,
 	CONSTRAINT source_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE TABLE "timestamp" (
+CREATE TABLE IF NOT EXISTS "timestamp" (
 	source_id INTEGER,
 	drive_ksuid INTEGER,
 	created_at timestamp DEFAULT (strftime('%s', 'now')) NOT NULL,
