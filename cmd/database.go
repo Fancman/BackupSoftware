@@ -36,7 +36,7 @@ func create_db() (string, error) {
 
 	fmt.Println(database_path)
 
-	if !file_exists(database_path) {
+	if !FileExists(database_path) {
 		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)
 
 		if err != nil {
@@ -133,23 +133,38 @@ func execute_sql_query(sql_str string) *sql.Rows {
 }
 
 // Inserts record into table drives
-func insert_drive_db(ksuid string) {
+func insert_drive_db(ksuid string) bool {
 	sql_str := `INSERT INTO drives(drive_ksuid) 
 	VALUES (?)`
-	stmt, err := db.Prepare(sql_str)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return false
+	}
+
+	stmt, err := tx.Prepare(sql_str)
 
 	if err != nil {
 		fmt.Println(err.Error())
+		return false
 	}
+
+	defer stmt.Close()
+
 	_, err = stmt.Exec(ksuid)
 	if err != nil {
 		fmt.Println(err.Error())
+		tx.Rollback()
+		return false
 	}
+
+	tx.Commit()
+	return true
 }
 
 // Returns drive by ksuid from db
-func drive_db_exists_ksuid(drive_ksuid string) (bool, string) {
-	stmt := `SELECT drive_ksuid FROM drives 
+func isDriveInDB(drive_ksuid string) (bool, string) {
+	stmt := `SELECT drive_ksuid FROM drive
 	WHERE drive_ksuid=?`
 	var r_ksuid string
 
@@ -160,7 +175,7 @@ func drive_db_exists_ksuid(drive_ksuid string) (bool, string) {
 	case nil:
 		return true, r_ksuid
 	default:
-		panic(err)
+		return false, ""
 	}
 }
 
@@ -176,7 +191,7 @@ func insert_backups_db(source string, dest_drive_ksuid string, dest_drive_letter
 			exists = true
 		}
 	} else if len(dest_drive_ksuid) != 0 {
-		exists, db_drive_ksuid = drive_db_exists_ksuid(dest_drive_ksuid)
+		exists, db_drive_ksuid = isDriveInDB(dest_drive_ksuid)
 	} else {
 		return errors.New("No input argument for backup destination")
 	}

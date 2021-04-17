@@ -182,7 +182,7 @@ func list_backups(db *sql.DB) []Backup {
 }*/
 
 // Creates .drive file with ksuid in it
-func write_disk_identification(drive_letter string, ksuid string) {
+func createDiskIdentityFile(drive_letter string, ksuid string) bool {
 	currentTime := time.Now()
 
 	data := []string{
@@ -195,6 +195,7 @@ func write_disk_identification(drive_letter string, ksuid string) {
 	if err != nil {
 		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
 		delete_drive_db(ksuid)
+		return false
 	}
 
 	datawriter := bufio.NewWriter(file)
@@ -205,11 +206,13 @@ func write_disk_identification(drive_letter string, ksuid string) {
 
 	datawriter.Flush()
 	file.Close()
+
+	return true
 }
 
 func start_restore(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
-		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
+		exists, db_drive_ksuid := isDriveInDB(destinations[0].ksuid)
 
 		if exists {
 			drive_letter := ksuid2drive(db_drive_ksuid)
@@ -288,7 +291,7 @@ func start_restore(id int, source string, destinations []Destination) error {
 // Testing compression
 func start_backup(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
-		exists, db_drive_ksuid := drive_db_exists_ksuid(destinations[0].ksuid)
+		exists, db_drive_ksuid := isDriveInDB(destinations[0].ksuid)
 
 		if exists {
 			drive_letter := ksuid2drive(db_drive_ksuid)
@@ -375,7 +378,7 @@ func list_drives() {
 
 			fmt.Print(drive_letter)
 
-			if file_exists(drive_letter + ":/.drive") {
+			if FileExists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
 				lines, err := read_file_lines(drive_letter + ":/.drive")
 
@@ -383,15 +386,20 @@ func list_drives() {
 					fmt.Printf("Error pri citani suboru: %s", err)
 				}
 
-				exists, info := drive_db_exists_ksuid(string(lines[0]))
-				// I have to use this because I cant have unused variables
-				//_ = info
+				exists, info := isDriveInDB(string(lines[0]))
 
 				// If .drive exists but isnt in db
 				fmt.Print(" - " + string(lines[0]))
 				if !exists && info == "" {
-					insert_drive_db(string(lines[0]))
+					success := insertDriveDB(string(lines[0]))
+
 					fmt.Print(" - Drive has .drive file but werent in drives table.")
+
+					if success {
+						fmt.Println("Drive was added to DB.")
+					}
+
+					fmt.Println("Inserting drive record into DB failed.")
 				} else {
 					fmt.Print(" - Drive has .drive file and is in drives table.")
 				}
@@ -409,7 +417,7 @@ func list_drives() {
 func drive_letter2ksuid(drive_letter string) (string, error) {
 	err := drive_exists(drive_letter)
 	if err == nil {
-		if file_exists(drive_letter + ":/.drive") {
+		if FileExists(drive_letter + ":/.drive") {
 
 		}
 	} else {
@@ -428,7 +436,7 @@ func ksuid2drive(ksuid string) string {
 
 			//fmt.Print(drive_letter)
 
-			if file_exists(drive_letter + ":/.drive") {
+			if FileExists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
 				lines, err := read_file_lines(drive_letter + ":/.drive")
 
@@ -446,15 +454,23 @@ func ksuid2drive(ksuid string) string {
 	return ""
 }
 
-func add_drive(drive_letter string) {
-	if !file_exists(drive_letter + ":/.drive") {
-		ksuid := gen_ksuid()
+func AddDrive(drive_letter string) bool {
+	if !FileExists(drive_letter + ":/.drive") {
+		ksuid := GenKsuid()
 
-		exists, info := drive_db_exists_ksuid(ksuid)
+		exists, info := isDriveInDB(ksuid)
 
 		if !exists && info == "" {
-			insert_drive_db(ksuid)
-			write_disk_identification(drive_letter, ksuid)
+			success := insertDriveDB(ksuid)
+
+			if success {
+				success = createDiskIdentityFile(drive_letter, ksuid)
+				if success {
+					return true
+				}
+			}
+
+			return false
 		}
 	}
 

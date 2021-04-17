@@ -11,7 +11,7 @@ import (
 )
 
 // https://blog.kowalczyk.info/article/JyRZ/generating-good-unique-ids-in-go.html
-func gen_ksuid() string {
+func GenKsuid() string {
 	return ksuid.New().String()
 }
 
@@ -75,7 +75,7 @@ func drive_exists(drive_letter string) error {
 
 // Get ksuid form .drive file by drive letter
 func get_ksuid_from_drive(drive_letter string) (string, error) {
-	if file_exists(drive_letter + ":/.drive") {
+	if FileExists(drive_letter + ":/.drive") {
 		// ak ma .drive subor a nie je zapisane v db
 		lines, err := read_file_lines(drive_letter + ":/.drive")
 
@@ -90,7 +90,7 @@ func get_ksuid_from_drive(drive_letter string) (string, error) {
 }
 
 // File exists?
-func file_exists(filename string) bool {
+func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false

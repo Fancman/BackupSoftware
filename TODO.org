@@ -41,3 +41,11 @@
     - FK source
     - FK drive
     - datetime (INTEGER is probably most efficient)
+
+
+-Pridanie drivu
+-Vytvorenie zdroju
+-Vytvorenie cielu
+-Priradit zdroj k cielu
+-Spustenie zalohovania
+-Spustenie obnovy
