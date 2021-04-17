@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -234,7 +233,7 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	return true
 }
 
-func start_restore(id int, source string, destinations []Destination) error {
+/*func start_restore(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
 		exists, db_drive_ksuid := db.isDriveInDB(destinations[0].ksuid)
 
@@ -284,22 +283,6 @@ func start_restore(id int, source string, destinations []Destination) error {
 				return err
 			}
 
-			/*err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-				fmt.Println("Destination: " + dest_path + "/" + info.Name() + ".7z")
-				fmt.Println("Source: " + source)
-
-				args := []string{"a", "-t7z", dest_path + "/" + info.Name() + ".7z", source}
-
-				cmd := exec.Command("7-ZipPortable/App/7-Zip64/7z.exe", args...)
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				err = cmd.Run()
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-
-				return nil
-			})*/
 
 			if err != nil {
 				fmt.Println(err.Error())
@@ -310,12 +293,17 @@ func start_restore(id int, source string, destinations []Destination) error {
 	}
 
 	return nil
-}
+}*/
 
 // Testing compression
 func start_backup(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
-		exists, db_drive_ksuid := isDriveInDB(destinations[0].ksuid)
+
+		db.CreateArchive("test")
+
+		db.InsertDriveDB("str")
+
+		db_drive_ksuid := db.isDriveInDB(destinations[0].ksuid)
 
 		if exists {
 			drive_letter := ksuid2drive(db_drive_ksuid)
