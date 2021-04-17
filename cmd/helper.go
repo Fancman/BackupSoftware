@@ -24,7 +24,7 @@ func get_appdata_dir() (string, error) {
 }
 
 // Reads lines from text file
-func read_file_lines(path string) ([]string, error) {
+func ReadFileLines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -41,9 +41,9 @@ func read_file_lines(path string) ([]string, error) {
 }
 
 // Returns list of available drives
-func get_drives() (r []string) {
+func GetDrives() (r []string) {
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
-		err := drive_exists(string(drive))
+		err := DriveExists(string(drive))
 		if err == nil {
 			r = append(r, string(drive))
 		}
@@ -64,7 +64,7 @@ func isCommandAvailable(name string) bool {
 }
 
 // Does drive exist?
-func drive_exists(drive_letter string) error {
+func DriveExists(drive_letter string) error {
 	f, err := os.Open(drive_letter + ":\\")
 	if err == nil {
 		f.Close()
@@ -77,7 +77,7 @@ func drive_exists(drive_letter string) error {
 func get_ksuid_from_drive(drive_letter string) (string, error) {
 	if FileExists(drive_letter + ":/.drive") {
 		// ak ma .drive subor a nie je zapisane v db
-		lines, err := read_file_lines(drive_letter + ":/.drive")
+		lines, err := ReadFileLines(drive_letter + ":/.drive")
 
 		if err != nil {
 			fmt.Printf("Error while reading a file: %s", err)

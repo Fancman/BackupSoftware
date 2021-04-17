@@ -11,7 +11,7 @@ import (
 
 var (
 	// Used for flags.
-	db                = open_conn()
+	db                = OpenConnection()
 	source            string
 	dest_drive_ksuid  string
 	dest_drive_letter string
@@ -41,7 +41,7 @@ var (
 				return errors.New("You have to enter target of action.")
 			}*/
 
-			list_drives()
+			ListDrives()
 
 			return nil
 		},
@@ -60,7 +60,11 @@ var (
 				return errors.New("Typed argument is not an alphabetic letter.")
 			}
 
-			AddDrive((args[0]))
+			if AddDrive(string(args[0])) {
+				fmt.Println("Drive was succesfully added.")
+			} else {
+				fmt.Println("Drive couldnt be added.")
+			}
 
 			return nil
 		},

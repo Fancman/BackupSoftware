@@ -182,7 +182,7 @@ func list_backups(db *sql.DB) []Backup {
 }*/
 
 // Creates .drive file with ksuid in it
-func createDiskIdentityFile(drive_letter string, ksuid string) bool {
+func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	currentTime := time.Now()
 
 	data := []string{
@@ -190,13 +190,17 @@ func createDiskIdentityFile(drive_letter string, ksuid string) bool {
 		currentTime.String(),
 	}
 
-	file, err := os.OpenFile(drive_letter+":/.drive", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	//fmt.Println("Creating .drive file on th path: " + drive_letter + ":/.drive")
+	//file, err := os.OpenFile(drive_letter+":/.drive", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	file, err := os.Create(drive_letter + ":/.drive")
+
 	if err != nil {
 		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
-		delete_drive_db(ksuid)
+		DelDriveDB(ksuid)
 		return false
 	}
+
+	defer file.Close()
 
 	datawriter := bufio.NewWriter(file)
 
@@ -370,8 +374,8 @@ func start_backup(id int, source string, destinations []Destination) error {
 }
 
 // Lists drives and their statuses
-func list_drives() {
-	drives := get_drives()
+func ListDrives() {
+	drives := GetDrives()
 
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
@@ -380,7 +384,7 @@ func list_drives() {
 
 			if FileExists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
-				lines, err := read_file_lines(drive_letter + ":/.drive")
+				lines, err := ReadFileLines(drive_letter + ":/.drive")
 
 				if err != nil {
 					fmt.Printf("Error pri citani suboru: %s", err)
@@ -391,7 +395,7 @@ func list_drives() {
 				// If .drive exists but isnt in db
 				fmt.Print(" - " + string(lines[0]))
 				if !exists && info == "" {
-					success := insertDriveDB(string(lines[0]))
+					success := InsertDriveDB(string(lines[0]))
 
 					fmt.Print(" - Drive has .drive file but werent in drives table.")
 
@@ -415,7 +419,7 @@ func list_drives() {
 }
 
 func drive_letter2ksuid(drive_letter string) (string, error) {
-	err := drive_exists(drive_letter)
+	err := DriveExists(drive_letter)
 	if err == nil {
 		if FileExists(drive_letter + ":/.drive") {
 
@@ -429,7 +433,7 @@ func drive_letter2ksuid(drive_letter string) (string, error) {
 
 // Get path to drive by ksuid
 func ksuid2drive(ksuid string) string {
-	drives := get_drives()
+	drives := GetDrives()
 
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
@@ -438,7 +442,7 @@ func ksuid2drive(ksuid string) string {
 
 			if FileExists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
-				lines, err := read_file_lines(drive_letter + ":/.drive")
+				lines, err := ReadFileLines(drive_letter + ":/.drive")
 
 				if err != nil {
 					fmt.Printf("Error while reading a file: %s", err)
@@ -461,10 +465,10 @@ func AddDrive(drive_letter string) bool {
 		exists, info := isDriveInDB(ksuid)
 
 		if !exists && info == "" {
-			success := insertDriveDB(ksuid)
+			success := InsertDriveDB(ksuid)
 
 			if success {
-				success = createDiskIdentityFile(drive_letter, ksuid)
+				success = CreateDiskIdentityFile(drive_letter, ksuid)
 				if success {
 					return true
 				}
@@ -474,4 +478,5 @@ func AddDrive(drive_letter string) bool {
 		}
 	}
 
+	return true
 }
