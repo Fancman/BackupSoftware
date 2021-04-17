@@ -8,6 +8,32 @@ import (
 	"path/filepath"
 )
 
+func ExecuteQuery(sql string, args ...interface{}) (sql.Result, error) {
+	tx, err := db.Begin()
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	stmt, err := tx.Prepare(sql)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	result, err := stmt.Exec(args...)
+	if err != nil {
+		fmt.Println(err.Error())
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+	return result, nil
+}
+
 // Removes record from drives table
 func DelDriveDB(ksuid string) bool {
 	tx, err := db.Begin()
@@ -70,7 +96,7 @@ func CreateArchive(archive_name string) int64 {
 
 // Creates database if doesnt exist
 func CreateDB() (string, error) {
-	appdata_path, err := get_appdata_dir()
+	appdata_path, err := GetAppDir()
 
 	if err != nil {
 		fmt.Println(err.Error())

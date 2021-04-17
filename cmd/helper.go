@@ -15,7 +15,7 @@ func GenKsuid() string {
 	return ksuid.New().String()
 }
 
-func get_appdata_dir() (string, error) {
+func GetAppDir() (string, error) {
 	path, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
