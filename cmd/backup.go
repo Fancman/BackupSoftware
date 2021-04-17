@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	helper "github.com/Fancman/BackupSoftware/helpers"
@@ -43,6 +44,26 @@ type Source struct {
 
 func CreateSource(source Source) {
 
+}
+
+func CreateSourceBackup(source_path string, backup_path string, archive_name string) {
+	if helper.FileExists(source_path) && helper.FileExists(backup_path) {
+		source_letter := filepath.VolumeName(source_path)
+		backup_letter := filepath.VolumeName(backup_path)
+
+		source_drive_ksuid := AddDrive(source_letter)
+		backup_drive_ksuid := AddDrive(backup_letter)
+
+		if source_drive_ksuid != "" && backup_drive_ksuid != "" {
+			source_path := helper.RemoveDriveLetter(source_path)
+			source_id := db.CreateSource(archive_name, source_drive_ksuid, source_path)
+
+			if archive_name != "" {
+
+			}
+			archive_id := db.CreateArchive(archive_name)
+		}
+	}
 }
 
 // Returns records from table 'backups'
@@ -277,7 +298,7 @@ func ListDrives() {
 	}
 }
 
-func drive_letter2ksuid(drive_letter string) (string, error) {
+func DriveLetter2Ksuid(drive_letter string) (string, error) {
 	err := helper.DriveExists(drive_letter)
 	if err == nil {
 		if helper.FileExists(drive_letter + ":/.drive") {
@@ -291,7 +312,7 @@ func drive_letter2ksuid(drive_letter string) (string, error) {
 }
 
 // Get path to drive by ksuid
-func ksuid2drive(ksuid string) string {
+func Ksuid2Drive(ksuid string) string {
 	drives := helper.GetDrives()
 
 	if len(drives) > 0 {
@@ -317,7 +338,7 @@ func ksuid2drive(ksuid string) string {
 	return ""
 }
 
-func AddDrive(drive_letter string) bool {
+func AddDrive(drive_letter string) string {
 	if !helper.FileExists(drive_letter + ":/.drive") {
 		ksuid := helper.GenKsuid()
 
@@ -329,13 +350,13 @@ func AddDrive(drive_letter string) bool {
 			if id > 0 {
 				success := CreateDiskIdentityFile(drive_letter, ksuid)
 				if success {
-					return true
+					return ksuid
 				}
 			}
 
-			return false
+			return ""
 		}
 	}
 
-	return true
+	return helper.GetKsuidFromDrive(drive_letter)
 }

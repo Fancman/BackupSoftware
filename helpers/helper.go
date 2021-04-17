@@ -2,10 +2,11 @@ package helper
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
+	"strings"
 
 	"github.com/segmentio/ksuid"
 )
@@ -73,20 +74,33 @@ func DriveExists(drive_letter string) error {
 	return err
 }
 
+func RemoveDriveLetter(name string) string {
+	name = strings.TrimSpace(name)
+	name = path.Clean(name)
+	// Remove drive letter
+	if len(name) == 2 && name[1] == ':' {
+		name = ""
+	} else if len(name) > 2 && name[1] == ':' {
+		name = name[2:]
+	}
+
+	return name
+}
+
 // Get ksuid form .drive file by drive letter
-func get_ksuid_from_drive(drive_letter string) (string, error) {
+func GetKsuidFromDrive(drive_letter string) string {
 	if FileExists(drive_letter + ":/.drive") {
 		// ak ma .drive subor a nie je zapisane v db
 		lines, err := ReadFileLines(drive_letter + ":/.drive")
 
 		if err != nil {
 			fmt.Printf("Error while reading a file: %s", err)
-			return "", err
+			return ""
 		}
 
-		return lines[0], nil
+		return lines[0]
 	}
-	return "", errors.New(".drive file doesn't exist on drive")
+	return ""
 }
 
 // File exists?

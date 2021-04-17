@@ -62,7 +62,7 @@ var (
 				return errors.New("Typed argument is not an alphabetic letter.")
 			}
 
-			if AddDrive(string(args[0])) {
+			if AddDrive(string(args[0])) != "" {
 				fmt.Println("Drive was succesfully added.")
 			} else {
 				fmt.Println("Drive couldnt be added.")

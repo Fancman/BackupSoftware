@@ -103,6 +103,25 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 	return id
 }
 
+func (conn *SQLite) CreateSource(archive_name string, drive_ksuid string, path string) int64 {
+
+	err := conn.OpenConnection()
+
+	if err != nil {
+		return 0
+	}
+
+	result, err := conn.db.Exec(`INSERT INTO source(archive_id, drive_ksuid, path) VALUES (?)`, archive_name, drive_ksuid, path)
+
+	if err != nil {
+		return 0
+	}
+
+	id, err := result.LastInsertId()
+
+	return id
+}
+
 // Creates database if doesnt exist
 func CreateDB() (string, error) {
 	appdata_path, err := helper.GetAppDir()
