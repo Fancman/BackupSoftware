@@ -4,14 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 
+	//"strconv"
+
+	"github.com/Fancman/BackupSoftware/database"
 	"github.com/spf13/cobra"
 )
 
 var (
 	// Used for flags.
-	db                = OpenConnection()
+	db                = &database.SQLite{}
 	source            string
 	dest_drive_ksuid  string
 	dest_drive_letter string
@@ -21,13 +23,13 @@ var (
 		Use:   "list-backups",
 		Short: "List stored backup records",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			backups := list_backups(db)
+			/*backups := list_backups(conn)
 
 			if len(backups) > 0 {
 				for _, b := range backups {
 					fmt.Printf("[id]: %b, [source]: %s, [destinations]: %v", b.id, b.source, b.destinations)
 				}
-			}
+			}*/
 
 			return nil
 		},
@@ -79,14 +81,14 @@ var (
 				return errors.New("You have to enter exactly one drive indetification.")
 			}
 
-			i, err := strconv.Atoi(args[0])
+			//i, err := strconv.Atoi(args[0])
 
 			if err != nil {
 				return errors.New("Entered backup id have to be an integer type")
 			}
 
-			backup := find_backup(db, i)
-			start_backup(backup.id, backup.source, backup.destinations)
+			//backup := find_backup(db, i)
+			//start_backup(backup.id, backup.source, backup.destinations)
 
 			return nil
 		},
@@ -101,14 +103,14 @@ var (
 				return errors.New("You have to enter exactly one drive indetification.")
 			}
 
-			i, err := strconv.Atoi(args[0])
+			//i, err := strconv.Atoi(args[0])
 
 			if err != nil {
 				return errors.New("Entered backup id have to be an integer type")
 			}
 
-			backup := find_backup(db, i)
-			start_restore(backup.id, backup.source, backup.destinations)
+			//backup := find_backup(db, i)
+			//start_restore(backup.id, backup.source, backup.destinations)
 
 			return nil
 		},
@@ -119,7 +121,7 @@ var (
 		Short: "Create backup record by enetring drive letter or ksuid -s [source] -d [destination drive letter] -p [path] | optional: -ksuid [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
-			insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
+			//insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
 			return nil
 		},
 	}
@@ -151,6 +153,12 @@ func Execute() {
 }
 
 func init() {
+	err := db.Fixtures()
+
+	if err != nil {
+		fmt.Println("Database tables couldnt be created.")
+	}
+
 	rootCmd.AddCommand(listDrivesCmd)
 	rootCmd.AddCommand(listBackupsCmd)
 	rootCmd.AddCommand(AddDriveCmd)

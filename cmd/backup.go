@@ -27,6 +27,26 @@ type Backup struct {
 	destinations []Destination
 }
 
+type Archive struct {
+	id   int
+	name string
+}
+
+type Drive struct {
+	ksuid string
+	name  string
+}
+
+type Source struct {
+	id      int
+	archive Archive
+	path    string
+}
+
+func CreateSource(source Source) {
+
+}
+
 // Returns records from table 'backups'
 func find_backup(db *sql.DB, backup_id int) Backup {
 	var id int
@@ -196,7 +216,7 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 
 	if err != nil {
 		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
-		DelDriveDB(ksuid)
+		db.DelDriveDB(ksuid)
 		return false
 	}
 
@@ -216,7 +236,7 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 
 func start_restore(id int, source string, destinations []Destination) error {
 	if len(destinations) == 1 {
-		exists, db_drive_ksuid := isDriveInDB(destinations[0].ksuid)
+		exists, db_drive_ksuid := db.isDriveInDB(destinations[0].ksuid)
 
 		if exists {
 			drive_letter := ksuid2drive(db_drive_ksuid)
