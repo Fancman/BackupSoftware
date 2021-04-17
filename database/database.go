@@ -10,14 +10,14 @@ import (
 	"github.com/jamiefdhurst/journal/pkg/database/rows"
 )
 
-type Database interface {
+/*type Database interface {
 	Query(sql string, args ...interface{}) (sql.Rows, error)
 	Exec(sql string, args ...interface{}) (sql.Result, error)
 	OpenConnection() error
-}
+}*/
 
 type SQLite struct {
-	Database
+	//Database
 	db *sql.DB
 }
 
@@ -75,7 +75,7 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 		return false
 	}
 
-	_, err = conn.Database.Exec(`DELETE FROM drive WHERE drive_ksuid=?`, ksuid)
+	_, err = conn.db.Exec(`DELETE FROM drive WHERE drive_ksuid=?`, ksuid)
 
 	if err != nil {
 		return false
@@ -92,7 +92,7 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 		return 0
 	}
 
-	result, err := conn.Database.Exec(`INSERT INTO archive(name) VALUES (?)`, archive_name)
+	result, err := conn.db.Exec(`INSERT INTO archive(name) VALUES (?)`, archive_name)
 
 	if err != nil {
 		return 0
@@ -142,8 +142,7 @@ func (conn *SQLite) Fixtures() error {
 			drive_ksuid VARCHAR NOT NULL,
 			name VARCHAR,
 			CONSTRAINT drive_PK PRIMARY KEY (drive_ksuid)
-		);
-		CREATE INDEX drive_drive_ksuid_IDX ON drive (drive_ksuid);`,
+		);`,
 		`CREATE TABLE IF NOT EXISTS "archive" (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name VARCHAR
@@ -181,9 +180,10 @@ func (conn *SQLite) Fixtures() error {
 	}
 
 	for _, table := range tables {
-		_, err := conn.Database.Exec(table)
+		_, err := conn.db.Exec(table)
 
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 	}
@@ -216,7 +216,7 @@ func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 		return 0
 	}
 
-	result, err := conn.Database.Exec(
+	result, err := conn.db.Exec(
 		`INSERT INTO drive(drive_ksuid) VALUES (?)`, ksuid)
 
 	if err != nil {
@@ -229,7 +229,7 @@ func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 }
 
 // Returns drive by ksuid from db
-func (conn *SQLite) isDriveInDB(drive_ksuid string) string {
+func (conn *SQLite) DriveInDB(drive_ksuid string) string {
 	err := conn.OpenConnection()
 
 	if err != nil {
