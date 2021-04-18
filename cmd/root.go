@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	//"strconv"
 
@@ -77,7 +78,7 @@ var (
 	}
 
 	startBackupCmd = &cobra.Command{
-		Use:   "start-backup [backup id]",
+		Use:   "start-backup [source id]",
 		Short: "Start backup from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -85,11 +86,13 @@ var (
 				return errors.New("You have to enter exactly one drive indetification.")
 			}
 
-			//i, err := strconv.Atoi(args[0])
+			i, err := strconv.ParseInt(args[0], 10, 64)
 
 			if err != nil {
 				return errors.New("Entered backup id have to be an integer type")
 			}
+
+			BackupFileDir(i)
 
 			//backup := find_backup(db, i)
 			//start_backup(backup.id, backup.source, backup.destinations)
@@ -99,7 +102,7 @@ var (
 	}
 
 	startRestoreCmd = &cobra.Command{
-		Use:   "start-restore [backup id]",
+		Use:   "start-restore [source id]",
 		Short: "Start restore from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -107,11 +110,13 @@ var (
 				return errors.New("You have to enter exactly one drive indetification.")
 			}
 
-			//i, err := strconv.Atoi(args[0])
+			i, err := strconv.ParseInt(args[0], 10, 64)
 
 			if err != nil {
 				return errors.New("Entered backup id have to be an integer type")
 			}
+
+			RestoreFileDir(i)
 
 			//backup := find_backup(db, i)
 			//start_restore(backup.id, backup.source, backup.destinations)
@@ -187,7 +192,7 @@ func init() {
 
 	//BackupFileDir(10)
 
-	RestoreFileDir(10)
+	//RestoreFileDir(10)
 
 	/*createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
 	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
