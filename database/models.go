@@ -1,14 +1,16 @@
 package database
 
+import "database/sql"
+
 type Source struct {
 	Id    int64
 	Ksuid string
-	Path  string
+	Path  sql.NullString
 }
 
 type Backup struct {
 	Ksuid string
-	Path  string
+	Path  sql.NullString
 }
 
 type Archive struct {

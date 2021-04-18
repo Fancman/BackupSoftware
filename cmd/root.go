@@ -120,7 +120,7 @@ var (
 		},
 	}
 
-	createBackupCmd = &cobra.Command{
+	/*createBackupCmd = &cobra.Command{
 		Use:   "create-backup -s [source] -d [destination drive letter] -p [path] | optional: -ksuid [drive ksuid]",
 		Short: "Create backup record by enetring drive letter or ksuid -s [source] -d [destination drive letter] -p [path] | optional: -ksuid [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -128,11 +128,11 @@ var (
 			//insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
 			return nil
 		},
-	}
+	}*/
 
-	createBackupCmdTest = &cobra.Command{
-		Use:   "create-backup-test -s [source path] -d [destination path] -a [archive name]",
-		Short: "create-backup-test -s [source path] -d [destination path] -a [archive name]",
+	createBackupCmd = &cobra.Command{
+		Use:   "create-backup -s [source path] -d [destination path] -a [archive name]",
+		Short: "create-backup -s [source path] -d [destination path] -a [archive name]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			CreateSourceBackup(source_path, backup_path, archive_name)
 			//CreateSourceBackup("C:/Users/tomas/Pictures/Backgrounds", "E:/backup", "test.7z")
@@ -179,16 +179,18 @@ func init() {
 	rootCmd.AddCommand(listBackupsCmd)
 	rootCmd.AddCommand(AddDriveCmd)
 	rootCmd.AddCommand(createBackupCmd)
-	rootCmd.AddCommand(createBackupCmdTest)
+	//rootCmd.AddCommand(createBackupCmdTest)
 
-	createBackupCmdTest.Flags().StringVarP(&source_path, "source", "s", "", "source path")
-	createBackupCmdTest.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
-	createBackupCmdTest.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
+	createBackupCmd.Flags().StringVarP(&source_path, "source", "s", "", "source path")
+	createBackupCmd.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
+	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
-	createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
+	BackupFileDir(10)
+
+	/*createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
 	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
 	createBackupCmd.Flags().StringVarP(&dest_drive_letter, "destination drive letter", "d", "", "destination drive letter")
-	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")
+	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")*/
 
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(startRestoreCmd)

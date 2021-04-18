@@ -52,7 +52,7 @@ func GetDrives() (r []string) {
 	return r
 }
 
-func isCommandAvailable(name string) bool {
+func CommandAvailable(name string) bool {
 	cmd := exec.Command(name)
 
 	err := cmd.Run()

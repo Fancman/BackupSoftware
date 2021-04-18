@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -86,22 +87,94 @@ func CreateSourceBackup(source_path string, backup_path string, archive_name str
 }
 
 func ListBackups() {
-	var backup_rels = db.FindBackups()
-
-	//fmt.Println(backup_rels)
+	var backup_rels = db.FindBackups(0)
 
 	for key, element := range backup_rels {
 		fmt.Print("Source id: " + strconv.FormatInt(key, 10))
-		fmt.Print(" - " + Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path)
+
+		fmt.Print(" - " + Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path.String)
 
 		fmt.Print(" [")
 		for _, b := range element.Backup {
-			fmt.Print(Ksuid2Drive(b.Ksuid) + ":" + b.Path)
+			//fmt.Println(Ksuid2Drive(b.Ksuid))
+			if Ksuid2Drive(b.Ksuid) != "" && b.Path.String != "" {
+				fmt.Print(Ksuid2Drive(b.Ksuid) + ":" + b.Path.String)
+			}
 		}
 		fmt.Print("]")
 
 		fmt.Print(" - Archive name: " + element.Archive.Name)
 		fmt.Print("\n")
+	}
+}
+
+func BackupFileDir(source_id int64) {
+	var backup_rels = db.FindBackups(source_id)
+
+	var destinations []string
+	var source string
+	var archive_name string
+
+	for _, element := range backup_rels {
+		if len(source) == 0 {
+			source = Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path.String
+		}
+
+		if len(archive_name) == 0 {
+			archive_name = element.Archive.Name
+		}
+
+		for _, b := range element.Backup {
+			if Ksuid2Drive(b.Ksuid) != "" && b.Path.String != "" {
+				destination := Ksuid2Drive(b.Ksuid) + ":" + b.Path.String
+				destinations = append(destinations, destination)
+
+				err := os.MkdirAll(destination, os.ModePerm)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+			}
+		}
+	}
+
+	info, err := os.Stat(source)
+
+	if os.IsNotExist(err) {
+		fmt.Println("File does not exist.")
+	}
+
+	if info.IsDir() {
+		fmt.Println("temp is a directory")
+	} else {
+		fmt.Println("temp is a file")
+	}
+
+	fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
+
+	cmd7zExists := helper.CommandAvailable("7z")
+	path7z := "7z"
+
+	if !cmd7zExists {
+		_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+		if os.IsNotExist(err) {
+			fmt.Println("7z executable isnt accesible.")
+		}
+
+		path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
+	}
+
+	for _, destination := range destinations {
+		args := []string{"a", "-t7z", destination + "/" + archive_name, source + "/*"}
+
+		cmd := exec.Command(path7z, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println(err.Error())
+			//return err
+		}
 	}
 }
 

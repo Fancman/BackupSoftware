@@ -94,7 +94,7 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 
 }*/
 
-func (conn *SQLite) FindBackups() map[int64]BackupRel {
+func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 
 	err := conn.OpenConnection()
 
@@ -122,15 +122,23 @@ func (conn *SQLite) FindBackups() map[int64]BackupRel {
 	------------------------------------------------------
 	left join drive b_d ON b.drive_ksuid = b_d.drive_ksuid`
 
-	rows, err := conn.QueryRows(sql_str)
+	var rows rows.Rows
+	if source_id != 0 {
+		sql_str = sql_str + ` WHERE s.id = ?`
+		rows, err = conn.QueryRows(sql_str, source_id)
+	} else {
+		rows, err = conn.QueryRows(sql_str)
+	}
 
-	fmt.Println(rows.Columns())
+	//rows, err := conn.QueryRows(sql_str)
 
-	var source_id int64
+	//fmt.Println(rows.Columns())
+
+	//var source_id int64
 	var source_ksuid string
-	var source_path string
+	var source_path sql.NullString
 	var backup_ksuid string
-	var backup_path string
+	var backup_path sql.NullString
 	var archive_name string
 	var archive_id int64
 
