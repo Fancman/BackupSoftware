@@ -185,7 +185,9 @@ func init() {
 	createBackupCmd.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
 	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
-	BackupFileDir(10)
+	//BackupFileDir(10)
+
+	RestoreFileDir(10)
 
 	/*createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")
 	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
