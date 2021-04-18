@@ -109,10 +109,11 @@ func ListBackups() {
 	}
 }
 
-func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, string, string) {
+func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, string, string, []string) {
 	var destinations []string
 	var source string
 	var archive_name string
+	var backup_ksuids []string
 
 	for _, element := range backup_rels {
 		if len(source) == 0 {
@@ -128,6 +129,8 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 				destination := Ksuid2Drive(b.Ksuid) + ":" + b.Path.String
 				destinations = append(destinations, destination)
 
+				backup_ksuids = append(backup_ksuids, b.Ksuid)
+
 				err := os.MkdirAll(destination, os.ModePerm)
 				if err != nil {
 					fmt.Println(err.Error())
@@ -136,24 +139,18 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 		}
 	}
 
-	return destinations, source, archive_name
+	return destinations, source, archive_name, backup_ksuids
 }
 
 func BackupFileDir(source_id int64) {
 	var backup_rels = db.FindBackups(source_id)
 
-	destinations, source, archive_name := TransformBackups(backup_rels)
+	destinations, source, archive_name, backup_ksuids := TransformBackups(backup_rels)
 
-	info, err := os.Stat(source)
+	_, err := os.Stat(source)
 
 	if os.IsNotExist(err) {
 		fmt.Println("File does not exist.")
-	}
-
-	if info.IsDir() {
-		fmt.Println("temp is a directory")
-	} else {
-		fmt.Println("temp is a file")
 	}
 
 	fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
@@ -182,6 +179,11 @@ func BackupFileDir(source_id int64) {
 			fmt.Println(err.Error())
 			//return err
 		}
+
+	}
+
+	for _, ksuid := range backup_ksuids {
+		db.AddBackupTimestamp(source_id, ksuid)
 	}
 }
 

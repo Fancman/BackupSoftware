@@ -87,12 +87,21 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 	return true
 }
 
-/*func (conn *SQLite) BackupExists(backup_path string, archive string){
-	backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int {
+	err := conn.OpenConnection()
 
-		backup_drive_ksuid := AddDrive(backup_letter)
+	if err != nil {
+		return 0
+	}
 
-}*/
+	_, err = conn.Exec(`INSERT INTO timestamp(source_id, drive_ksuid) VALUES (?, ?)`, source_id, drive_ksuid)
+
+	if err != nil {
+		return 0
+	}
+
+	return 1
+}
 
 func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 
