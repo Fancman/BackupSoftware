@@ -6,5 +6,7 @@ import (
 
 func main() {
 
+	//CreateSourceBackup("C:/Users/tomas/Pictures/Backgrounds", "E:/backup", "test.7z")
+
 	cmd.Execute()
 }

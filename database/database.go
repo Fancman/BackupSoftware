@@ -103,7 +103,7 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 	return id
 }
 
-func (conn *SQLite) CreateSource(archive_name string, drive_ksuid string, path string) int64 {
+func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 
 	err := conn.OpenConnection()
 
@@ -111,7 +111,46 @@ func (conn *SQLite) CreateSource(archive_name string, drive_ksuid string, path s
 		return 0
 	}
 
-	result, err := conn.db.Exec(`INSERT INTO source(archive_id, drive_ksuid, path) VALUES (?)`, archive_name, drive_ksuid, path)
+	result, err := conn.db.Exec(`INSERT INTO source(drive_ksuid, path) VALUES (?, ?)`, drive_ksuid, path)
+
+	if err != nil {
+		fmt.Println(err)
+		return 0
+	}
+
+	id, err := result.LastInsertId()
+
+	return id
+}
+
+func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) int64 {
+
+	err := conn.OpenConnection()
+
+	if err != nil {
+		return 0
+	}
+
+	result, err := conn.db.Exec(`INSERT INTO backup(archive_id, drive_ksuid, path) VALUES (?, ?, ?)`, archive_id, drive_ksuid, path)
+
+	if err != nil {
+		return 0
+	}
+
+	id, err := result.LastInsertId()
+
+	return id
+}
+
+func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64 {
+
+	err := conn.OpenConnection()
+
+	if err != nil {
+		return 0
+	}
+
+	result, err := conn.db.Exec(`UPDATE source SET archive_id = ? where id = ?`, archive_id, source_id)
 
 	if err != nil {
 		return 0
@@ -133,7 +172,7 @@ func CreateDB() (string, error) {
 
 	var database_path = appdata_path + "/BackupSoft/sqlite-database.db"
 
-	if !helper.FileExists(database_path) {
+	if !helper.Exists(database_path) {
 		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)
 
 		if err != nil {

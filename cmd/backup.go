@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	helper "github.com/Fancman/BackupSoftware/helpers"
@@ -47,22 +49,46 @@ func CreateSource(source Source) {
 }
 
 func CreateSourceBackup(source_path string, backup_path string, archive_name string) {
-	if helper.FileExists(source_path) && helper.FileExists(backup_path) {
-		source_letter := filepath.VolumeName(source_path)
-		backup_letter := filepath.VolumeName(backup_path)
+	if helper.Exists(source_path) && helper.Exists(backup_path) {
+		fmt.Println("--------------------------------------->")
+
+		source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
+		backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
 
 		source_drive_ksuid := AddDrive(source_letter)
 		backup_drive_ksuid := AddDrive(backup_letter)
 
+		fmt.Println("---------------------------------------")
+
+		fmt.Println(source_letter)
+		fmt.Println(backup_letter)
+		fmt.Println(source_drive_ksuid)
+		fmt.Println(backup_drive_ksuid)
+
 		if source_drive_ksuid != "" && backup_drive_ksuid != "" {
 			source_path := helper.RemoveDriveLetter(source_path)
-			source_id := db.CreateSource(archive_name, source_drive_ksuid, source_path)
+			backup_path := helper.RemoveDriveLetter(backup_path)
+
+			fmt.Println(source_path)
+			fmt.Println(backup_path)
+
+			source_id := db.CreateSource(source_drive_ksuid, source_path)
+
+			fmt.Println(source_id)
 
 			if archive_name != "" {
-
+				archive_name = "backup-" + strconv.FormatInt(source_id, 10)
 			}
+
 			archive_id := db.CreateArchive(archive_name)
+
+			db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
+			db.UpdateSourceArchive(source_id, archive_id)
 		}
+	} else {
+		fmt.Println("Files dont exist.")
+		//fmt.Println(helper.Exists(source_path))
+		//fmt.Println(helper.Exists(backup_path))
 	}
 }
 
@@ -262,7 +288,7 @@ func ListDrives() {
 
 			fmt.Print(drive_letter)
 
-			if helper.FileExists(drive_letter + ":/.drive") {
+			if helper.Exists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
 				lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
 
@@ -301,7 +327,7 @@ func ListDrives() {
 func DriveLetter2Ksuid(drive_letter string) (string, error) {
 	err := helper.DriveExists(drive_letter)
 	if err == nil {
-		if helper.FileExists(drive_letter + ":/.drive") {
+		if helper.Exists(drive_letter + ":/.drive") {
 
 		}
 	} else {
@@ -320,7 +346,7 @@ func Ksuid2Drive(ksuid string) string {
 
 			//fmt.Print(drive_letter)
 
-			if helper.FileExists(drive_letter + ":/.drive") {
+			if helper.Exists(drive_letter + ":/.drive") {
 				// ak ma .drive subor a nie je zapisane v db
 				lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
 
@@ -339,7 +365,7 @@ func Ksuid2Drive(ksuid string) string {
 }
 
 func AddDrive(drive_letter string) string {
-	if !helper.FileExists(drive_letter + ":/.drive") {
+	if !helper.Exists(drive_letter + ":/.drive") {
 		ksuid := helper.GenKsuid()
 
 		drive_info := db.DriveInDB(ksuid)
