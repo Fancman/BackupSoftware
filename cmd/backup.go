@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Fancman/BackupSoftware/database"
 	helper "github.com/Fancman/BackupSoftware/helpers"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -108,9 +109,7 @@ func ListBackups() {
 	}
 }
 
-func BackupFileDir(source_id int64) {
-	var backup_rels = db.FindBackups(source_id)
-
+func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, string, string) {
 	var destinations []string
 	var source string
 	var archive_name string
@@ -136,6 +135,14 @@ func BackupFileDir(source_id int64) {
 			}
 		}
 	}
+
+	return destinations, source, archive_name
+}
+
+func BackupFileDir(source_id int64) {
+	var backup_rels = db.FindBackups(source_id)
+
+	destinations, source, archive_name := TransformBackups(backup_rels)
 
 	info, err := os.Stat(source)
 
