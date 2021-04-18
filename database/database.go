@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	//"strings"
+
 	helper "github.com/Fancman/BackupSoftware/helpers"
 	"github.com/jamiefdhurst/journal/pkg/database/rows"
 )
@@ -34,9 +36,10 @@ func (conn *SQLite) QueryRows(sql string, args ...interface{}) (rows.Rows, error
 
 	if err != nil {
 		fmt.Println(err)
+		return rows, err
 	}
 
-	defer rows.Close()
+	//defer rows.Close()
 
 	return rows, nil
 }
@@ -84,6 +87,92 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 	return true
 }
 
+/*func (conn *SQLite) BackupExists(backup_path string, archive string){
+	backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+
+		backup_drive_ksuid := AddDrive(backup_letter)
+
+}*/
+
+func (conn *SQLite) FindBackups() map[int64]BackupRel {
+
+	err := conn.OpenConnection()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	sql_str := `SELECT 
+	s.id as source_id,	
+	s.drive_ksuid  as source_ksuid,
+	s."path" as source_path,
+	b.drive_ksuid as backup_ksuid,
+	b."path" as backup_path,
+	a.id as archive_id,
+	a.name as archive_name
+	from "backup" b 
+	---------------
+	left join "source" s 
+	--------------------
+	ON b.archive_id = s.archive_id 
+	------------------------------
+	left join archive a on b.archive_id = a.id 
+	------------------------------------------------------
+	left join drive s_d ON s.drive_ksuid = s_d.drive_ksuid 
+	------------------------------------------------------
+	left join drive b_d ON b.drive_ksuid = b_d.drive_ksuid`
+
+	rows, err := conn.QueryRows(sql_str)
+
+	fmt.Println(rows.Columns())
+
+	var source_id int64
+	var source_ksuid string
+	var source_path string
+	var backup_ksuid string
+	var backup_path string
+	var archive_name string
+	var archive_id int64
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	backup_rels := make(map[int64]BackupRel)
+
+	for rows.Next() {
+		err := rows.Scan(&source_id, &source_ksuid, &source_path, &backup_ksuid, &backup_path, &archive_id, &archive_name)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		backup := Backup{Ksuid: backup_ksuid, Path: backup_path}
+
+		_, ok := backup_rels[source_id]
+
+		if !ok {
+			source := Source{Id: source_id, Ksuid: source_ksuid, Path: source_path}
+			archive := Archive{Id: archive_id, Name: archive_name}
+
+			backup_rels[source_id] = BackupRel{
+				Source:  source,
+				Backup:  []Backup{},
+				Archive: archive,
+			}
+		}
+
+		backup_rel := backup_rels[source_id]
+		backup_rel.Backup = append(backup_rel.Backup, backup)
+
+		backup_rels[source_id] = backup_rel
+	}
+
+	rows.Close()
+
+	return backup_rels
+}
+
 func (conn *SQLite) CreateArchive(archive_name string) int64 {
 
 	err := conn.OpenConnection()
@@ -92,7 +181,17 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 		return 0
 	}
 
-	result, err := conn.db.Exec(`INSERT INTO archive(name) VALUES (?)`, archive_name)
+	stmt := `SELECT id FROM archive WHERE name = ?`
+	var archive_id int64
+
+	row := conn.db.QueryRow(stmt, archive_name)
+	err = row.Scan(&archive_id)
+
+	if err == nil {
+		return archive_id
+	}
+
+	result, err := conn.Exec(`INSERT INTO archive(name) VALUES (?)`, archive_name)
 
 	if err != nil {
 		return 0
@@ -111,7 +210,7 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 		return 0
 	}
 
-	result, err := conn.db.Exec(`INSERT INTO source(drive_ksuid, path) VALUES (?, ?)`, drive_ksuid, path)
+	result, err := conn.Exec(`INSERT INTO source(drive_ksuid, path) VALUES (?, ?)`, drive_ksuid, path)
 
 	if err != nil {
 		fmt.Println(err)
@@ -123,23 +222,30 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 	return id
 }
 
-func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) int64 {
+func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) bool {
 
 	err := conn.OpenConnection()
 
 	if err != nil {
-		return 0
+		return false
 	}
 
-	result, err := conn.db.Exec(`INSERT INTO backup(archive_id, drive_ksuid, path) VALUES (?, ?, ?)`, archive_id, drive_ksuid, path)
+	stmt := `SELECT archive_id, drive_ksuid FROM backup WHERE archive_id = ? AND drive_ksuid = ? AND path = ?`
 
-	if err != nil {
-		return 0
+	row := conn.db.QueryRow(stmt, archive_id, drive_ksuid, path)
+	err = row.Scan(&archive_id, &drive_ksuid)
+
+	if err == nil {
+		return true
 	}
 
-	id, err := result.LastInsertId()
+	_, err = conn.Exec(`INSERT INTO backup(archive_id, drive_ksuid, path) VALUES (?, ?, ?)`, archive_id, drive_ksuid, path)
 
-	return id
+	if err == nil {
+		return true
+	}
+
+	return false
 }
 
 func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64 {
@@ -150,7 +256,7 @@ func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64
 		return 0
 	}
 
-	result, err := conn.db.Exec(`UPDATE source SET archive_id = ? where id = ?`, archive_id, source_id)
+	result, err := conn.Exec(`UPDATE source SET archive_id = ? where id = ?`, archive_id, source_id)
 
 	if err != nil {
 		return 0
@@ -238,7 +344,7 @@ func (conn *SQLite) Fixtures() error {
 	}
 
 	for _, table := range tables {
-		_, err := conn.db.Exec(table)
+		_, err := conn.Exec(table)
 
 		if err != nil {
 			fmt.Println(err)
@@ -274,7 +380,7 @@ func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 		return 0
 	}
 
-	result, err := conn.db.Exec(
+	result, err := conn.Exec(
 		`INSERT INTO drive(drive_ksuid) VALUES (?)`, ksuid)
 
 	if err != nil {

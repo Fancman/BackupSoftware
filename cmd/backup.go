@@ -44,39 +44,30 @@ type Source struct {
 	path    string
 }
 
-func CreateSource(source Source) {
-
-}
-
+//func AddSource()
 func CreateSourceBackup(source_path string, backup_path string, archive_name string) {
 	if helper.Exists(source_path) && helper.Exists(backup_path) {
-		fmt.Println("--------------------------------------->")
-
 		source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
 		backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
 
 		source_drive_ksuid := AddDrive(source_letter)
 		backup_drive_ksuid := AddDrive(backup_letter)
 
-		fmt.Println("---------------------------------------")
-
-		fmt.Println(source_letter)
-		fmt.Println(backup_letter)
-		fmt.Println(source_drive_ksuid)
-		fmt.Println(backup_drive_ksuid)
+		fmt.Println("Source: " + source_letter + " - " + source_drive_ksuid)
+		fmt.Println("Backup: " + backup_letter + " - " + backup_drive_ksuid)
 
 		if source_drive_ksuid != "" && backup_drive_ksuid != "" {
 			source_path := helper.RemoveDriveLetter(source_path)
 			backup_path := helper.RemoveDriveLetter(backup_path)
 
-			fmt.Println(source_path)
-			fmt.Println(backup_path)
+			//fmt.Println(source_path)
+			//fmt.Println(backup_path)
 
 			source_id := db.CreateSource(source_drive_ksuid, source_path)
 
-			fmt.Println(source_id)
+			//fmt.Println(source_id)
 
-			if archive_name != "" {
+			if archive_name == "" {
 				archive_name = "backup-" + strconv.FormatInt(source_id, 10)
 			}
 
@@ -84,11 +75,33 @@ func CreateSourceBackup(source_path string, backup_path string, archive_name str
 
 			db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
 			db.UpdateSourceArchive(source_id, archive_id)
+		} else {
+			fmt.Println("Drives couldnt be added to DB.")
 		}
 	} else {
-		fmt.Println("Files dont exist.")
+		fmt.Println("Files or directories dont exist.")
 		//fmt.Println(helper.Exists(source_path))
 		//fmt.Println(helper.Exists(backup_path))
+	}
+}
+
+func ListBackups() {
+	var backup_rels = db.FindBackups()
+
+	//fmt.Println(backup_rels)
+
+	for key, element := range backup_rels {
+		fmt.Print("Source id: " + strconv.FormatInt(key, 10))
+		fmt.Print(" - " + Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path)
+
+		fmt.Print(" [")
+		for _, b := range element.Backup {
+			fmt.Print(Ksuid2Drive(b.Ksuid) + ":" + b.Path)
+		}
+		fmt.Print("]")
+
+		fmt.Print(" - Archive name: " + element.Archive.Name)
+		fmt.Print("\n")
 	}
 }
 

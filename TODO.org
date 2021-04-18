@@ -49,3 +49,7 @@
 -Priradit zdroj k cielu
 -Spustenie zalohovania
 -Spustenie obnovy
+
+PS C:\DEV\BackupSoft> C:\DEV\BackupSoft\BackupSoftware.exe create-backup-test -s "C:/Users/tomas/Pictures" -d "E:/backup/test" -a "test.7z"
+Files or directories dont exist.
+PS C:\DEV\BackupSoft> C:\DEV\BackupSoft\BackupSoftware.exe create-backup-test -s "C:/Users/tomas/Pictures" -d "E:\ouch" -a "test.7z"       

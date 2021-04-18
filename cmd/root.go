@@ -26,6 +26,7 @@ var (
 		Use:   "list-backups",
 		Short: "List stored backup records",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ListBackups()
 			/*backups := list_backups(conn)
 
 			if len(backups) > 0 {
