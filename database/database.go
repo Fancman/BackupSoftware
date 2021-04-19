@@ -72,7 +72,7 @@ func (conn *SQLite) Exec(sql string, args ...interface{}) (sql.Result, error) {
 
 // Removes record from drives table
 func (conn *SQLite) DelDriveDB(ksuid string) bool {
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return false
@@ -88,7 +88,7 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 }
 
 func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int {
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return 0
@@ -105,7 +105,7 @@ func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int 
 
 func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		fmt.Println(err)
@@ -192,7 +192,7 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 
 func (conn *SQLite) CreateArchive(archive_name string) int64 {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return 0
@@ -221,7 +221,7 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 
 func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return 0
@@ -241,7 +241,7 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 
 func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) bool {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return false
@@ -267,7 +267,7 @@ func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path stri
 
 func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64 {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return 0
@@ -285,28 +285,21 @@ func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64
 }
 
 // Creates database if doesnt exist
-func CreateDB() (string, error) {
-	appdata_path, err := helper.GetAppDir()
-
-	if err != nil {
-		fmt.Println(err.Error())
-		return appdata_path, err
-	}
-
-	var database_path = appdata_path + "/BackupSoft/sqlite-database.db"
+func CreateDB() error {
+	var database_path = helper.GetDatabaseFile()
 
 	if !helper.Exists(database_path) {
 		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)
 
 		if err != nil {
 			fmt.Println(err.Error())
-			return database_path, err
+			return err
 		}
 
 		file, err := os.Create(database_path)
 		if err != nil {
 			fmt.Println(err.Error())
-			return database_path, err
+			return err
 		}
 
 		file.Close()
@@ -314,7 +307,7 @@ func CreateDB() (string, error) {
 
 	}
 
-	return database_path, nil
+	return nil
 }
 
 func (conn *SQLite) Fixtures() error {
@@ -354,7 +347,7 @@ func (conn *SQLite) Fixtures() error {
 		);`,
 	}
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return err
@@ -372,8 +365,8 @@ func (conn *SQLite) Fixtures() error {
 	return nil
 }
 
-func (conn *SQLite) OpenConnection() error {
-	database_path, err := CreateDB()
+func (conn *SQLite) OpenConnection(database_path string) error {
+	err := CreateDB()
 
 	if err != nil {
 		fmt.Println(err)
@@ -388,10 +381,35 @@ func (conn *SQLite) OpenConnection() error {
 	return conn.db.Ping()
 }
 
+func (conn *SQLite) TestDatabase(database_path string) sql.NullTime {
+	err := conn.OpenConnection(database_path)
+
+	if err != nil {
+		return sql.NullTime{}
+	}
+
+	stmt := `SELECT drive_ksuid FROM drive
+	WHERE drive_ksuid=?`
+
+	var last_date sql.NullTime
+
+	row := conn.db.QueryRow(stmt)
+
+	conn.db.Close()
+
+	switch err := row.Scan(&last_date); err {
+	case nil:
+		return last_date
+	default:
+		return sql.NullTime{}
+	}
+
+}
+
 // Inserts record into table drives
 func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return 0
@@ -411,7 +429,7 @@ func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 
 // Returns drive by ksuid from db
 func (conn *SQLite) DriveInDB(drive_ksuid string) string {
-	err := conn.OpenConnection()
+	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
 		return ""

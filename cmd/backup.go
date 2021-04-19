@@ -16,36 +16,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-//var db *sql.DB
-var err error
-
-type Destination struct {
-	ksuid string
-	path  string
-}
-
-type Backup struct {
-	id           int
-	source       string
-	destinations []Destination
-}
-
-type Archive struct {
-	id   int
-	name string
-}
-
-type Drive struct {
-	ksuid string
-	name  string
-}
-
-type Source struct {
-	id      int
-	archive Archive
-	path    string
-}
-
 //func AddSource()
 func CreateSourceBackup(source_path string, backup_path string, archive_name string) {
 	if helper.Exists(source_path) && helper.Exists(backup_path) {
@@ -236,160 +206,6 @@ func BackupFileDir(source_id int64) {
 	}
 }
 
-// Returns records from table 'backups'
-func find_backup(db *sql.DB, backup_id int) Backup {
-	var id int
-	var source string
-	var destination_ksuid string
-	var path string
-	//var cron string
-	stmt := `SELECT b.id, b.source, dr.drive_ksuid, de.path FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.drive_ksuid=de.drive_ksuid WHERE b.id = ?;`
-
-	rows, err := db.Query(stmt, backup_id)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer rows.Close()
-
-	var backup Backup
-	var i = 0
-
-	for rows.Next() {
-		err := rows.Scan(&id, &source, &destination_ksuid, &path)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Println(id, source, destination_ksuid)
-		destionation := Destination{ksuid: destination_ksuid, path: path}
-
-		if i == 0 {
-			backup = Backup{id: id, source: source, destinations: []Destination{destionation}}
-		} else {
-			backup.destinations = append(backup.destinations, destionation)
-		}
-
-		i++
-	}
-
-	if err := rows.Err(); err != nil {
-		fmt.Println(err)
-	}
-
-	return backup
-}
-
-// Returns records from table 'backups'
-func find_backups(db *sql.DB, backup_id int) []Backup {
-	var id int
-	var source string
-	var destination_ksuid string
-	var path string
-	//var cron string
-	stmt := `SELECT b.id, b.source, dr.drive_ksuid, de.path FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.drive_ksuid=de.drive_ksuid WHERE b.id = ?;`
-
-	rows, err := db.Query(stmt, backup_id)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer rows.Close()
-
-	var backups []Backup
-
-	for rows.Next() {
-		var exists_in_backups = false
-
-		err := rows.Scan(&id, &source, &destination_ksuid, &path)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Println(id, source, destination_ksuid)
-
-		for k, v := range backups {
-			if v.id == id {
-				backups[k].destinations = append(backups[k].destinations, Destination{ksuid: destination_ksuid, path: path})
-				exists_in_backups = true
-				break
-			}
-		}
-		if !exists_in_backups {
-			destionation := Destination{ksuid: destination_ksuid, path: path}
-			backups = append(backups, Backup{id: id, source: source, destinations: []Destination{destionation}})
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		fmt.Println(err)
-	}
-
-	return backups
-}
-
-// Returns records from table 'backups'
-func list_backups(db *sql.DB) []Backup {
-	var id int
-	var source string
-	var destination_ksuid string
-	var path string
-	//var cron string
-	stmt := `SELECT b.id, b.source, dr.drive_ksuid, de.path FROM backups b JOIN destinations de ON de.backup_id = b.id JOIN drives dr ON dr.drive_ksuid=de.drive_ksuid`
-
-	rows, err := db.Query(stmt)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer rows.Close()
-
-	var backups []Backup
-
-	for rows.Next() {
-		var exists_in_backups = false
-
-		err := rows.Scan(&id, &source, &destination_ksuid, &path)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		//fmt.Println(id, source, destination_ksuid)
-
-		for k, v := range backups {
-			if v.id == id {
-				backups[k].destinations = append(backups[k].destinations, Destination{ksuid: destination_ksuid, path: path})
-				exists_in_backups = true
-				break
-			}
-		}
-		if !exists_in_backups {
-			destionation := Destination{ksuid: destination_ksuid, path: path}
-			backups = append(backups, Backup{id: id, source: source, destinations: []Destination{destionation}})
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		fmt.Println(err)
-	}
-
-	return backups
-}
-
-// Returns drive by letter from db
-/*func drive_db_exists_letter(drive_letter string) (bool, []string) {
-	stmt := `SELECT drive_letter, drive_ksuid FROM drives
-	WHERE drive_letter=?`
-	var r_ksuid string
-	var r_letter string
-	row := db.QueryRow(stmt, drive_letter)
-	switch err := row.Scan(&r_letter, &r_ksuid); err {
-	case sql.ErrNoRows:
-		return false, []string{}
-	case nil:
-		return true, []string{r_letter, r_ksuid}
-	default:
-		panic(err)
-	}
-}*/
-
 // Creates .drive file with ksuid in it
 func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	currentTime := time.Now()
@@ -421,6 +237,53 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	file.Close()
 
 	return true
+}
+
+func BackupDatabase() {
+	drives := helper.GetDrives()
+	var database_path = helper.GetDatabaseFile()
+
+	old_timestamp := db.TestDatabase(database_path)
+
+	//print(old_timestamp.Time.String())
+
+	if len(drives) > 0 {
+		for _, drive_letter := range drives {
+
+			if helper.Exists(drive_letter + ":/.drive") {
+				// ak ma .drive subor a nie je zapisane v db
+				_, err := helper.ReadFileLines(drive_letter + ":/.drive")
+
+				if err != nil {
+					continue
+				}
+
+				drive_db_path := drive_letter + ":/sqlite-database.db"
+
+				if !helper.Exists(drive_db_path) && helper.Exists(database_path) {
+					helper.CopyFile(database_path, drive_db_path)
+					continue
+				}
+
+				new_timestamp := db.TestDatabase(drive_db_path)
+
+				//print(new_timestamp.Time.String())
+
+				if (new_timestamp == sql.NullTime{} && old_timestamp == sql.NullTime{}) {
+					// Ziadne operacie
+				}
+
+				if new_timestamp.Time.After(old_timestamp.Time) {
+					helper.CopyFile(drive_db_path, database_path)
+					break
+				}
+				/*Pozriet na disky ci maju databazu ak hej tak precitat tabulku timestamps
+				a porovnat ze ktore maju novsie zaznamy ak je lokalna novsia tak skopirovat */
+
+			}
+		}
+	}
+
 }
 
 // Lists drives and their statuses

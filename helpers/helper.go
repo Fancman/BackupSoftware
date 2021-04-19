@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -39,6 +40,16 @@ func ReadFileLines(path string) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 	return lines, scanner.Err()
+}
+
+func GetDatabaseFile() string {
+	appdata_path, err := GetAppDir()
+
+	if err != nil {
+		return ""
+	}
+
+	return appdata_path + "/BackupSoft/sqlite-database.db"
 }
 
 // Returns list of available drives
@@ -121,4 +132,22 @@ func Exists(path string) bool {
 		return false
 	}
 	return false
+}
+
+func CopyFile(source_path string, destination_path string) error {
+	source_path = path.Clean(source_path)
+	destination_path = path.Clean(destination_path)
+
+	bytes, err := ioutil.ReadFile(source_path)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(destination_path, bytes, 0755)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

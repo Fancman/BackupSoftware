@@ -174,6 +174,7 @@ func Execute() {
 }
 
 func init() {
+	BackupDatabase()
 	err := db.Fixtures()
 
 	if err != nil {
