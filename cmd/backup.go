@@ -290,44 +290,47 @@ func BackupDatabase() {
 func ListDrives() {
 	drives := helper.GetDrives()
 
-	if len(drives) > 0 {
-		for _, drive_letter := range drives {
+	if len(drives) == 0 {
+		fmt.Println("There are no drives connected to the PC.")
+		return
+	}
 
-			fmt.Print(drive_letter)
+	for _, drive_letter := range drives {
 
-			if helper.Exists(drive_letter + ":/.drive") {
-				// ak ma .drive subor a nie je zapisane v db
-				lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
+		fmt.Print(drive_letter)
 
-				if err != nil {
-					fmt.Printf("Error pri citani suboru: %s", err)
-				}
-
-				drive_info := db.DriveInDB(string(lines[0]))
-
-				// If .drive exists but isnt in db
-				fmt.Print(" - " + string(lines[0]))
-				if drive_info == "" {
-					id := db.InsertDriveDB(string(lines[0]))
-
-					fmt.Print(" - Drive has .drive file but werent in drives table.")
-
-					if id > 0 {
-						fmt.Println("Drive was added to DB.")
-					}
-
-					fmt.Println("Inserting drive record into DB failed.")
-				} else {
-					fmt.Print(" - Drive has .drive file and is in drives table.")
-				}
-			} else {
-				fmt.Print(" - Drive doesn't have a .drive file")
-			}
-
-			fmt.Print("\n")
+		if !helper.Exists(drive_letter + ":/.drive") {
+			fmt.Println(" - Drive doesn't have a .drive file")
+			continue
 		}
-	} else {
-		fmt.Println("There are none drives connected to PC.")
+
+		// ak ma .drive subor a nie je zapisane v db
+		lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
+
+		if err != nil {
+			fmt.Printf("Error pri citani suboru: %s\n", err)
+			continue
+		}
+
+		drive_info := db.DriveInDB(string(lines[0]))
+
+		// If .drive exists but isnt in db
+		fmt.Print(" - " + string(lines[0]))
+		if drive_info != "" {
+			fmt.Println(" - Drive has .drive file and is in drives table.")
+			continue
+		}
+
+		fmt.Println(" - Drive has .drive file but werent in drives table.")
+
+		id := db.InsertDriveDB(string(lines[0]))
+
+		if id <= 0 {
+			fmt.Println("Inserting drive record into DB failed.")
+			continue
+		}
+
+		fmt.Println("Drive was added to DB.")
 	}
 }
 
