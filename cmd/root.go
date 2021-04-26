@@ -18,10 +18,12 @@ var (
 	source            string
 	dest_drive_ksuid  string
 	dest_drive_letter string
-	dest_path         string
-	source_path       string
-	backup_path       string
-	archive_name      string
+	//dest_path         string
+	//source_path       string
+	source_paths []string
+	backup_paths []string
+	backup_path  string
+	archive_name string
 
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
@@ -139,7 +141,8 @@ var (
 		Use:   "create-backup -s [source path] -d [destination path] -a [archive name]",
 		Short: "create-backup -s [source path] -d [destination path] -a [archive name]",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			CreateSourceBackup(source_path, backup_path, archive_name)
+			//fmt.Println(source_paths)
+			CreateSourceBackup(source_paths, backup_paths, archive_name)
 			//CreateSourceBackup("C:/Users/tomas/Pictures/Backgrounds", "E:/backup", "test.7z")
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
 			//insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)
@@ -187,8 +190,11 @@ func init() {
 	rootCmd.AddCommand(createBackupCmd)
 	//rootCmd.AddCommand(createBackupCmdTest)
 
-	createBackupCmd.Flags().StringVarP(&source_path, "source", "s", "", "source path")
-	createBackupCmd.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
+	//createBackupCmd.Flags().StringSlice("source", source_paths, "sources paths")
+	createBackupCmd.Flags().StringArrayVarP(&source_paths, "source", "s", make([]string, 0), "sources paths")
+	createBackupCmd.Flags().StringArrayVarP(&backup_paths, "destination", "d", make([]string, 0), "destination path")
+	//createBackupCmd.Flags().StringVarP(&source_path, "source", "s", "", "source path")
+	//createBackupCmd.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
 	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
 	//BackupFileDir(10)

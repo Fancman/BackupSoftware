@@ -17,63 +17,75 @@ import (
 )
 
 //func AddSource()
-func CreateSourceBackup(source_path string, backup_path string, archive_name string) int {
-	if helper.Exists(source_path) && helper.Exists(backup_path) {
-		source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
-		backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) {
+	fmt.Println("Source: " + strings.Join(source_paths, ", "))
+	fmt.Println("Backup: " + strings.Join(backup_paths, ", "))
 
-		source_drive_ksuid := AddDrive(source_letter)
-		backup_drive_ksuid := AddDrive(backup_letter)
+	fmt.Println("-----------------------------------------------------------------------")
 
-		fmt.Println("Source: " + source_letter + " - " + source_drive_ksuid)
-		fmt.Println("Backup: " + backup_letter + " - " + backup_drive_ksuid)
+	for _, source_path := range source_paths {
+		for _, backup_path := range backup_paths {
 
-		if source_drive_ksuid != "" && backup_drive_ksuid != "" {
-			source_path := helper.RemoveDriveLetter(source_path)
-			backup_path := helper.RemoveDriveLetter(backup_path)
+			fmt.Println(source_path + " - " + backup_path)
 
-			//fmt.Println(source_path)
-			//fmt.Println(backup_path)
+			if helper.Exists(source_path) && helper.Exists(backup_path) {
+				source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
+				backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
 
-			source_id := db.CreateSource(source_drive_ksuid, source_path)
+				source_drive_ksuid := AddDrive(source_letter)
+				backup_drive_ksuid := AddDrive(backup_letter)
 
-			if source_id == 0 {
-				return 0
+				//fmt.Println("Source: " + source_letter + " - " + source_drive_ksuid)
+				//fmt.Println("Backup: " + backup_letter + " - " + backup_drive_ksuid)
+
+				if source_drive_ksuid != "" && backup_drive_ksuid != "" {
+					source_path := helper.RemoveDriveLetter(source_path)
+					backup_path := helper.RemoveDriveLetter(backup_path)
+
+					//fmt.Println(source_path)
+					//fmt.Println(backup_path)
+
+					source_id := db.CreateSource(source_drive_ksuid, source_path)
+
+					if source_id == 0 {
+						continue
+					}
+
+					if archive_name == "" {
+						archive_name = "backup-" + strconv.FormatInt(source_id, 10)
+					}
+
+					archive_id := db.CreateArchive(archive_name)
+
+					if archive_id == 0 {
+						continue
+					}
+
+					res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
+
+					if res == false {
+						continue
+					}
+
+					archive_id = db.UpdateSourceArchive(source_id, archive_id)
+
+					if archive_id == 0 {
+						continue
+					}
+
+					// Vymazat vytvorene ak zaznamy pred continue ak sa vrati 0
+				}
+
+				//fmt.Println("Drives couldnt be added to DB.")
+
+				//return 0
 			}
-
-			if archive_name == "" {
-				archive_name = "backup-" + strconv.FormatInt(source_id, 10)
-			}
-
-			archive_id := db.CreateArchive(archive_name)
-
-			if archive_id == 0 {
-				return 0
-			}
-
-			res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
-
-			if res == false {
-				return 0
-			}
-
-			archive_id = db.UpdateSourceArchive(source_id, archive_id)
-
-			if archive_id == 0 {
-				return 0
-			}
-
-			return 1
 		}
-
-		fmt.Println("Drives couldnt be added to DB.")
-
-		return 0
 	}
 
-	fmt.Println("Files or directories dont exist.")
+	//fmt.Println("Files or directories dont exist.")
 
-	return 0
+	//return 0
 }
 
 func ListBackups() {
