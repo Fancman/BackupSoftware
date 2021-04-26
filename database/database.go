@@ -227,6 +227,17 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 		return 0
 	}
 
+	var id int64
+
+	stmt := `SELECT id FROM source WHERE drive_ksuid = ? AND path = ?`
+
+	row := conn.db.QueryRow(stmt, drive_ksuid, path)
+	err = row.Scan(&id)
+
+	if err == nil {
+		return id
+	}
+
 	result, err := conn.Exec(`INSERT INTO source(drive_ksuid, path) VALUES (?, ?)`, drive_ksuid, path)
 
 	if err != nil {
@@ -234,7 +245,7 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 		return 0
 	}
 
-	id, err := result.LastInsertId()
+	id, err = result.LastInsertId()
 
 	return id
 }

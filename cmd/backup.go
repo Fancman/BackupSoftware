@@ -17,7 +17,7 @@ import (
 )
 
 //func AddSource()
-func CreateSourceBackup(source_path string, backup_path string, archive_name string) {
+func CreateSourceBackup(source_path string, backup_path string, archive_name string) int {
 	if helper.Exists(source_path) && helper.Exists(backup_path) {
 		source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
 		backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
@@ -37,7 +37,9 @@ func CreateSourceBackup(source_path string, backup_path string, archive_name str
 
 			source_id := db.CreateSource(source_drive_ksuid, source_path)
 
-			//fmt.Println(source_id)
+			if source_id == 0 {
+				return 0
+			}
 
 			if archive_name == "" {
 				archive_name = "backup-" + strconv.FormatInt(source_id, 10)
@@ -45,16 +47,33 @@ func CreateSourceBackup(source_path string, backup_path string, archive_name str
 
 			archive_id := db.CreateArchive(archive_name)
 
-			db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
-			db.UpdateSourceArchive(source_id, archive_id)
-		} else {
-			fmt.Println("Drives couldnt be added to DB.")
+			if archive_id == 0 {
+				return 0
+			}
+
+			res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
+
+			if res == false {
+				return 0
+			}
+
+			archive_id = db.UpdateSourceArchive(source_id, archive_id)
+
+			if archive_id == 0 {
+				return 0
+			}
+
+			return 1
 		}
-	} else {
-		fmt.Println("Files or directories dont exist.")
-		//fmt.Println(helper.Exists(source_path))
-		//fmt.Println(helper.Exists(backup_path))
+
+		fmt.Println("Drives couldnt be added to DB.")
+
+		return 0
 	}
+
+	fmt.Println("Files or directories dont exist.")
+
+	return 0
 }
 
 func ListBackups() {
