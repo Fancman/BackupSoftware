@@ -1,12 +1,12 @@
 * TODO Model improvement proposal
-  - [ ] Use similar format for source as destination in backups (source drive ID
+  - [x] Use similar format for source as destination in backups (source drive ID
     and path), so that external drives can be also considered as sources and can
     work even when drive letter doesn't match.
-  - [ ] Add field ='name' TEXT= to =drives= table (see below).
-  - [ ] =drive-ksuid= should be primary key of drives (no need to have two IDs).
-  - [ ] Allow more paths to be contained in one archive (m:n relation
+  - [x] Add field ='name' TEXT= to =drives= table (see below).
+  - [x] =drive-ksuid= should be primary key of drives (no need to have two IDs).
+  - [x] Allow more paths to be contained in one archive (m:n relation
     backup:destination).
-  - [ ] Save timestamp of last backup for each individual path on each drive (so
+  - [x] Save timestamp of last backup for each individual path on each drive (so
     that user can see when was a specific path backed up on a specific drive).
 ** New model
   - use singular table naming -- shorter SQL statements and better for possible
@@ -41,7 +41,8 @@
     - FK source
     - FK drive
     - datetime (INTEGER is probably most efficient)
-* TODO Can't distinguish destination in list-backups
+
+* [x] TODO Can't distinguish destination in list-backups
   Suppose I have created two backups with same source but different destinations:
   #+begin_example
 Source id: 1 - D:\Sources\base16\ [F:\test\P:\test\] - Archive name: base16.7z
@@ -51,12 +52,12 @@ Source id: 2 - D:\Sources\base16\ [F:\test\P:\test\] - Archive name: base16.7z
 
   This is probably caused by =create-backup= not checking whether source already
   exists (there's a duplicate row in =source= table).
-* TODO Fix UNIQUE constraint failed after update
+* [x] TODO Fix UNIQUE constraint failed after update
   Error reads out:
   : UNIQUE constraint failed: timestamp.source_id, timestamp.drive_ksuid
   It happens after update (start-backup). Probably related to the previous TODO.
-* TODO Allow user to enter multiple sources in create-backup
-* TODO Allow user to enter multiple destinations in create-backup
+* [x] TODO Allow user to enter multiple sources in create-backup
+* [x] TODO Allow user to enter multiple destinations in create-backup
 * TODO Allow user to choose just one destination/or all of them
   when starting the backup or updating archive.
 * TODO Allow user to add or remove sources/destinations in backup
