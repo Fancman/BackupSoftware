@@ -493,3 +493,25 @@ func AddDrive(drive_letter string) string {
 
 	return helper.GetKsuidFromDrive(drive_letter)
 }
+
+func RemoveSource(source_id int64) int {
+	res := db.RemoveSource(source_id)
+
+	if res {
+		fmt.Println("Destination was removed succesfuly.")
+		return 1
+	}
+
+	fmt.Println("Destination was not removed.")
+	return 0
+}
+
+func RemoveDestination(archive_id int64, drive_ksuid string) {
+	res := db.RemoveDestination(archive_id, drive_ksuid)
+
+	if res {
+		fmt.Println("Destination was removed succesfuly.")
+	}
+
+	fmt.Println("Destination was not removed.")
+}

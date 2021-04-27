@@ -24,6 +24,9 @@ var (
 	backup_paths []string
 	backup_path  string
 	archive_name string
+	archive_id   int64
+	drive_ksuid  string
+	source_id    int64
 
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
@@ -150,20 +153,38 @@ var (
 		},
 	}
 
+	removeSourceCmd = &cobra.Command{
+		Use:   "remove-source -s [source id]",
+		Short: "remove-source -s [source id]",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			source_id, err := cmd.Flags().GetInt64("source-id")
+
+			if err == nil {
+				RemoveSource(source_id)
+			}
+
+			return nil
+		},
+	}
+
+	removeDestination = &cobra.Command{
+		Use:   "remove-source -a [archive id] -d [drive ksuid]",
+		Short: "remove-source -a [archive id] -d [drive ksuid]",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			RemoveDestination(archive_id, drive_ksuid)
+
+			return nil
+		},
+	}
+
 	//insert_backups_db(source string, dest_drive_ksuid string, path string)
 
 	rootCmd = &cobra.Command{
 		Use:   "Backupsoft",
 		Short: "Simple 7z backup utility",
 		Long:  `Backupsoft is a distributed backup utility using 7z as its tool for archiving.`,
-	}
-	singleCmd = &cobra.Command{
-		Use:   "single [URL]",
-		Short: "Take a screenshot of a single URL",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("test")
-		},
 	}
 )
 
@@ -188,6 +209,10 @@ func init() {
 	rootCmd.AddCommand(listBackupsCmd)
 	rootCmd.AddCommand(AddDriveCmd)
 	rootCmd.AddCommand(createBackupCmd)
+	rootCmd.AddCommand(removeSourceCmd)
+
+	removeSourceCmd.Flags().Int64P("source-id", "s", 0, "Source ID")
+
 	//rootCmd.AddCommand(createBackupCmdTest)
 
 	//createBackupCmd.Flags().StringSlice("source", source_paths, "sources paths")

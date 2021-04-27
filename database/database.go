@@ -87,6 +87,40 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 	return true
 }
 
+// Removes record from source table
+func (conn *SQLite) RemoveSource(source_id int64) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM source WHERE id=?`, source_id)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+// Removes record from drives table
+func (conn *SQLite) RemoveDestination(archive_id int64, drive_ksuid string) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM backup WHERE archive_id = ? AND drive_ksuid = ?`, archive_id, drive_ksuid)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
