@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,15 +20,15 @@ import (
 
 //func AddSource()
 func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) {
-	fmt.Println("Source: " + strings.Join(source_paths, ", "))
-	fmt.Println("Backup: " + strings.Join(backup_paths, ", "))
+	fmt.Println("Sources: " + strings.Join(source_paths, ", "))
+	fmt.Println("Backups: " + strings.Join(backup_paths, ", "))
 
-	fmt.Println("-----------------------------------------------------------------------")
+	//fmt.Println("-----------------------------------------------------------------------")
 
 	for _, source_path := range source_paths {
 		for _, backup_path := range backup_paths {
 
-			fmt.Println(source_path + " - " + backup_path)
+			//fmt.Println(source_path + " - " + backup_path)
 
 			if helper.Exists(source_path) == nil && helper.Exists(backup_path) == nil {
 				source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
@@ -54,6 +55,12 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 					if archive_name == "" {
 						archive_name = "backup-" + strconv.FormatInt(source_id, 10)
+					}
+
+					archive_ext := path.Ext(archive_name)
+
+					if archive_ext == "" {
+						archive_name += ".7z"
 					}
 
 					archive_id := db.CreateArchive(archive_name)
