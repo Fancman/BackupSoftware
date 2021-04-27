@@ -273,7 +273,17 @@ func BackupFileDir(source_id int64) int {
 	}
 
 	for _, destination := range destinations {
-		args := []string{"a", "-t7z", destination + "/" + archive_name, source + "/*"}
+		var args []string
+		archive_exists := helper.Exists(destination + "/" + archive_name)
+
+		fmt.Println(archive_exists)
+
+		if archive_exists == nil {
+			fmt.Println("Updating")
+			args = []string{"u", destination + "/" + archive_name, source + "/*"}
+		} else {
+			args = []string{"a", "-t7z", destination + "/" + archive_name, source + "/*"}
+		}
 
 		cmd := exec.Command(path7z, args...)
 		cmd.Stdout = os.Stdout
