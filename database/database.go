@@ -94,6 +94,24 @@ func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int 
 		return 0
 	}
 
+	var cnt int = 0
+
+	stmt := `SELECT count(*) as cnt FROM timestamp WHERE source_id = ? AND drive_ksuid = ?`
+
+	row := conn.db.QueryRow(stmt, source_id, drive_ksuid)
+
+	err = row.Scan(&cnt)
+
+	if err == nil && cnt != 0 {
+		_, err := conn.Exec(`UPDATE timestamp SET updated_at = strftime('%s', 'now') where source_id = ? AND drive_ksuid = ?`, source_id, drive_ksuid)
+
+		if err == nil {
+			return 1
+		}
+
+		return 0
+	}
+
 	_, err = conn.Exec(`INSERT INTO timestamp(source_id, drive_ksuid) VALUES (?, ?)`, source_id, drive_ksuid)
 
 	if err != nil {
@@ -299,7 +317,7 @@ func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64
 func CreateDB() error {
 	var database_path = helper.GetDatabaseFile()
 
-	if !helper.Exists(database_path) {
+	if helper.Exists(database_path) != nil {
 		err := os.MkdirAll(filepath.Dir(database_path), os.ModePerm)
 
 		if err != nil {

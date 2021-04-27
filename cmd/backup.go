@@ -28,7 +28,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 			fmt.Println(source_path + " - " + backup_path)
 
-			if helper.Exists(source_path) && helper.Exists(backup_path) {
+			if helper.Exists(source_path) == nil && helper.Exists(backup_path) == nil {
 				source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
 				backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
 
@@ -73,7 +73,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 						continue
 					}
 
-					// Vymazat vytvorene ak zaznamy pred continue ak sa vrati 0
+					// Vymazat vytvorene zaznamy pred continue ak sa vrati 0
 				}
 
 				//fmt.Println("Drives couldnt be added to DB.")
@@ -94,7 +94,13 @@ func ListBackups() {
 	for key, element := range backup_rels {
 		fmt.Print("Source id: " + strconv.FormatInt(key, 10))
 
-		fmt.Print(" - " + Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path.String)
+		drive_letter := Ksuid2Drive(element.Source.Ksuid)
+
+		if drive_letter == "" {
+			fmt.Print(" - Source drive isn't accesible. " + " [" + element.Source.Path.String + "]")
+		} else {
+			fmt.Print(" - [" + drive_letter + ":" + element.Source.Path.String + "]")
+		}
 
 		fmt.Print(" [")
 		for _, b := range element.Backup {
@@ -126,10 +132,11 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 		}
 
 		for _, b := range element.Backup {
-			if Ksuid2Drive(b.Ksuid) != "" && b.Path.String != "" {
-				destination := Ksuid2Drive(b.Ksuid) + ":" + b.Path.String
-				destinations = append(destinations, destination)
+			destination_ksuid := Ksuid2Drive(b.Ksuid)
+			if destination_ksuid != "" && b.Path.String != "" {
+				destination := destination_ksuid + ":" + b.Path.String
 
+				destinations = append(destinations, destination)
 				backup_ksuids = append(backup_ksuids, b.Ksuid)
 
 				err := os.MkdirAll(destination, os.ModePerm)
@@ -148,13 +155,17 @@ func RestoreFileDir(source_id int64) {
 
 	destinations, source, archive_name, _ := TransformBackups(backup_rels)
 
+	//fmt.Println(destinations)
+	//fmt.Println(source)
+	//fmt.Println(archive_name)
+
 	_, err := os.Stat(source)
 
 	if os.IsNotExist(err) {
 		fmt.Println("File does not exist.")
 	}
 
-	fmt.Println("Restoring " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
+	fmt.Println("Restoring [" + strings.Join(destinations, "/"+archive_name+", ") + "] to " + source)
 
 	cmd7zExists := helper.CommandAvailable("7z")
 	path7z := "7z"
@@ -192,7 +203,7 @@ func RestoreFileDir(source_id int64) {
 	}
 }
 
-func BackupFileDir(source_id int64) {
+func BackupFileDir(source_id int64) int {
 	var backup_rels = db.FindBackups(source_id)
 
 	destinations, source, archive_name, backup_ksuids := TransformBackups(backup_rels)
@@ -200,7 +211,8 @@ func BackupFileDir(source_id int64) {
 	_, err := os.Stat(source)
 
 	if os.IsNotExist(err) {
-		fmt.Println("File does not exist.")
+		fmt.Println("Source file does not exist.")
+		return 0
 	}
 
 	fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
@@ -213,6 +225,7 @@ func BackupFileDir(source_id int64) {
 
 		if os.IsNotExist(err) {
 			fmt.Println("7z executable isnt accesible.")
+			return 0
 		}
 
 		path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
@@ -227,14 +240,15 @@ func BackupFileDir(source_id int64) {
 		err = cmd.Run()
 		if err != nil {
 			fmt.Println(err.Error())
-			//return err
+			continue
 		}
-
 	}
 
 	for _, ksuid := range backup_ksuids {
 		db.AddBackupTimestamp(source_id, ksuid)
 	}
+
+	return 1
 }
 
 // Creates .drive file with ksuid in it
@@ -281,7 +295,7 @@ func BackupDatabase() {
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
 
-			if helper.Exists(drive_letter + ":/.drive") {
+			if helper.Exists(drive_letter+":/.drive") == nil {
 				// ak ma .drive subor a nie je zapisane v db
 				_, err := helper.ReadFileLines(drive_letter + ":/.drive")
 
@@ -291,7 +305,7 @@ func BackupDatabase() {
 
 				drive_db_path := drive_letter + ":/sqlite-database.db"
 
-				if !helper.Exists(drive_db_path) && helper.Exists(database_path) {
+				if helper.Exists(drive_db_path) != nil && helper.Exists(database_path) == nil {
 					helper.CopyFile(database_path, drive_db_path)
 					continue
 				}
@@ -330,7 +344,7 @@ func ListDrives() {
 
 		fmt.Print(drive_letter)
 
-		if !helper.Exists(drive_letter + ":/.drive") {
+		if helper.Exists(drive_letter+":/.drive") != nil {
 			fmt.Println(" - Drive doesn't have a .drive file")
 			continue
 		}
@@ -365,7 +379,7 @@ func ListDrives() {
 	}
 }
 
-func DriveLetter2Ksuid(drive_letter string) (string, error) {
+/*func DriveLetter2Ksuid(drive_letter string) (string, error) {
 	err := helper.DriveExists(drive_letter)
 	if err == nil {
 		if helper.Exists(drive_letter + ":/.drive") {
@@ -376,7 +390,7 @@ func DriveLetter2Ksuid(drive_letter string) (string, error) {
 	}
 
 	return drive_letter, nil
-}
+}*/
 
 // Get path to drive by ksuid
 func Ksuid2Drive(ksuid string) string {
@@ -385,9 +399,9 @@ func Ksuid2Drive(ksuid string) string {
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
 
-			//fmt.Print(drive_letter)
+			err := helper.Exists(drive_letter + ":/.drive")
 
-			if helper.Exists(drive_letter + ":/.drive") {
+			if err == nil {
 				// ak ma .drive subor a nie je zapisane v db
 				lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
 
@@ -399,6 +413,7 @@ func Ksuid2Drive(ksuid string) string {
 					return drive_letter
 				}
 			}
+
 		}
 	}
 
@@ -406,7 +421,7 @@ func Ksuid2Drive(ksuid string) string {
 }
 
 func AddDrive(drive_letter string) string {
-	if !helper.Exists(drive_letter + ":/.drive") {
+	if helper.Exists(drive_letter+":/.drive") != nil {
 		ksuid := helper.GenKsuid()
 
 		drive_info := db.DriveInDB(ksuid)

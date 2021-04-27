@@ -100,7 +100,7 @@ func RemoveDriveLetter(name string) string {
 
 // Get ksuid form .drive file by drive letter
 func GetKsuidFromDrive(drive_letter string) string {
-	if Exists(drive_letter + ":/.drive") {
+	if Exists(drive_letter+":/.drive") == nil {
 		// ak ma .drive subor a nie je zapisane v db
 		lines, err := ReadFileLines(drive_letter + ":/.drive")
 
@@ -123,15 +123,14 @@ func GetKsuidFromDrive(drive_letter string) string {
 	return !info.IsDir()
 }*/
 
-func Exists(path string) bool {
+func Exists(path string) error {
 	_, err := os.Stat(path)
+
 	if err == nil {
-		return true
+		return nil
 	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	return false
+
+	return err
 }
 
 func CopyFile(source_path string, destination_path string) error {
