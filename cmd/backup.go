@@ -14,6 +14,7 @@ import (
 	"github.com/Fancman/BackupSoftware/database"
 	helper "github.com/Fancman/BackupSoftware/helpers"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/olekukonko/tablewriter"
 )
 
 //func AddSource()
@@ -90,33 +91,63 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 func ListBackups() {
 	var backup_rels = db.FindBackups(0)
+	var table_data [][]string
+	var destinations []string
 
 	for key, element := range backup_rels {
-		fmt.Print("Source id: " + strconv.FormatInt(key, 10))
+		var table_row []string
+
+		//fmt.Print("Source id: " + strconv.FormatInt(key, 10))
+
+		table_row = append(table_row, strconv.FormatInt(key, 10))
 
 		drive_letter := Ksuid2Drive(element.Source.Ksuid)
 
 		if drive_letter == "" {
-			fmt.Print(" - Source drive isn't accesible. " + " [" + element.Source.Path.String + "]")
+			table_row = append(table_row, "Not accesible")
+			//fmt.Print(" - Source drive isn't accesible. " + " [" + element.Source.Path.String + "]")
 		} else {
-			fmt.Print(" - [" + drive_letter + ":" + element.Source.Path.String + "]")
+			table_row = append(table_row, drive_letter)
+			//fmt.Print(" - [" + drive_letter + ":" + element.Source.Path.String + "]")
 		}
 
-		fmt.Print(" [")
+		table_row = append(table_row, element.Source.Path.String)
+
+		//fmt.Print(" [")
 		for _, b := range element.Backup {
 			//fmt.Println(Ksuid2Drive(b.Ksuid))
-			if Ksuid2Drive(b.Ksuid) != "" && b.Path.String != "" {
-				fmt.Print(Ksuid2Drive(b.Ksuid) + ":" + b.Path.String)
+			destination_ksuid := Ksuid2Drive(b.Ksuid)
+			if destination_ksuid != "" && b.Path.String != "" {
+				destinations = append(destinations, destination_ksuid+":"+b.Path.String)
+				//fmt.Print(Ksuid2Drive(b.Ksuid) + ":" + b.Path.String)
 			}
 		}
-		fmt.Print("]")
+		//fmt.Print("]")
 
-		fmt.Print(" - Archive name: " + element.Archive.Name)
+		table_row = append(table_row, strings.Join(destinations, ", "))
+
+		destinations = nil
+
+		table_row = append(table_row, element.Archive.Name)
+
+		//fmt.Print(" - Archive name: " + element.Archive.Name)
 		if element.Archived_at.Valid {
-			fmt.Print(" - Archived at : " + element.Archived_at.Time.Local().Format(time.UnixDate))
+			table_row = append(table_row, element.Archived_at.Time.Local().Format(time.UnixDate))
+			//fmt.Print(" - Archived at : " + element.Archived_at.Time.Local().Format(time.UnixDate))
+		} else {
+			table_row = append(table_row, "Nil")
 		}
-		fmt.Print("\n")
+		//fmt.Print("\n")
+		table_data = append(table_data, table_row)
 	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Source ID", "Source drive", "Source Path", "Destinations", "Archive", "Archived at"})
+
+	for _, v := range table_data {
+		table.Append(v)
+	}
+	table.Render()
 }
 
 func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, string, string, []string) {
