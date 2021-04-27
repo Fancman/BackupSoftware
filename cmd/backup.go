@@ -112,6 +112,9 @@ func ListBackups() {
 		fmt.Print("]")
 
 		fmt.Print(" - Archive name: " + element.Archive.Name)
+		if element.Archived_at.Valid {
+			fmt.Print(" - Archived at : " + element.Archived_at.Time.Local().Format(time.UnixDate))
+		}
 		fmt.Print("\n")
 	}
 }

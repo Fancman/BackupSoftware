@@ -136,7 +136,8 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	b.drive_ksuid as backup_ksuid,
 	b."path" as backup_path,
 	a.id as archive_id,
-	a.name as archive_name
+	a.name as archive_name,
+	t.updated_at as archived_at
 	from "backup" b 
 	---------------
 	left join "source" s 
@@ -147,7 +148,8 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	------------------------------------------------------
 	left join drive s_d ON s.drive_ksuid = s_d.drive_ksuid 
 	------------------------------------------------------
-	left join drive b_d ON b.drive_ksuid = b_d.drive_ksuid`
+	left join drive b_d ON b.drive_ksuid = b_d.drive_ksuid
+	left join "timestamp" t ON s.id = t.source_id and b.drive_ksuid = t.drive_ksuid `
 
 	var rows rows.Rows
 	if source_id != 0 {
@@ -168,6 +170,7 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	var backup_path sql.NullString
 	var archive_name string
 	var archive_id int64
+	var archived_at sql.NullTime
 
 	if err != nil {
 		fmt.Println(err)
@@ -176,7 +179,7 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	backup_rels := make(map[int64]BackupRel)
 
 	for rows.Next() {
-		err := rows.Scan(&source_id, &source_ksuid, &source_path, &backup_ksuid, &backup_path, &archive_id, &archive_name)
+		err := rows.Scan(&source_id, &source_ksuid, &source_path, &backup_ksuid, &backup_path, &archive_id, &archive_name, &archived_at)
 
 		if err != nil {
 			fmt.Println(err)
@@ -191,9 +194,10 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 			archive := Archive{Id: archive_id, Name: archive_name}
 
 			backup_rels[source_id] = BackupRel{
-				Source:  source,
-				Backup:  []Backup{},
-				Archive: archive,
+				Source:      source,
+				Backup:      []Backup{},
+				Archive:     archive,
+				Archived_at: archived_at,
 			}
 		}
 

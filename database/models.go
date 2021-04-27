@@ -19,7 +19,8 @@ type Archive struct {
 }
 
 type BackupRel struct {
-	Source  Source
-	Backup  []Backup
-	Archive Archive
+	Source      Source
+	Backup      []Backup
+	Archive     Archive
+	Archived_at sql.NullTime
 }
