@@ -279,7 +279,6 @@ func BackupFileDir(source_id int64) int {
 		fmt.Println(archive_exists)
 
 		if archive_exists == nil {
-			fmt.Println("Updating")
 			args = []string{"u", destination + "/" + archive_name, source + "/*"}
 		} else {
 			args = []string{"a", "-t7z", destination + "/" + archive_name, source + "/*"}
@@ -514,4 +513,16 @@ func RemoveDestination(archive_id int64, drive_ksuid string) {
 	}
 
 	fmt.Println("Destination was not removed.")
+}
+
+func RemoveDestinationByPath(destination_path string) {
+	if helper.Exists(destination_path) == nil {
+		dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
+
+		dest_drive_ksuid := AddDrive(dest_letter)
+		dest_archive_name := filepath.Base(destination_path)
+
+		fmt.Println(dest_drive_ksuid, dest_archive_name)
+	}
+
 }

@@ -168,12 +168,24 @@ var (
 		},
 	}
 
-	removeDestination = &cobra.Command{
+	removeDestinationCmd = &cobra.Command{
 		Use:   "remove-source -a [archive id] -d [drive ksuid]",
 		Short: "remove-source -a [archive id] -d [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			RemoveDestination(archive_id, drive_ksuid)
+			archive_id, err_1 := cmd.Flags().GetInt64("archive-id")
+
+			drive_ksuid, err_2 := cmd.Flags().GetString("drive-ksuid")
+
+			if err_1 == nil || err_2 == nil {
+				RemoveDestination(archive_id, drive_ksuid)
+			}
+
+			destination_path, err := cmd.Flags().GetString("dest-path")
+
+			if err == nil {
+				RemoveDestinationByPath(destination_path)
+			}
 
 			return nil
 		},
@@ -213,13 +225,14 @@ func init() {
 
 	removeSourceCmd.Flags().Int64P("source-id", "s", 0, "Source ID")
 
+	removeDestinationCmd.Flags().Int64P("archive-id", "a", 0, "Archive ID")
+	removeDestinationCmd.Flags().StringP("drive-ksuid", "d", "", "Drive Ksuid")
+
 	//rootCmd.AddCommand(createBackupCmdTest)
 
 	//createBackupCmd.Flags().StringSlice("source", source_paths, "sources paths")
 	createBackupCmd.Flags().StringArrayVarP(&source_paths, "source", "s", make([]string, 0), "sources paths")
 	createBackupCmd.Flags().StringArrayVarP(&backup_paths, "destination", "d", make([]string, 0), "destination path")
-	//createBackupCmd.Flags().StringVarP(&source_path, "source", "s", "", "source path")
-	//createBackupCmd.Flags().StringVarP(&backup_path, "backup", "d", "", "destination path")
 	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
 	//BackupFileDir(10)

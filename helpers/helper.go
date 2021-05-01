@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/segmentio/ksuid"
@@ -88,6 +89,11 @@ func DriveExists(drive_letter string) error {
 func RemoveDriveLetter(name string) string {
 	name = strings.TrimSpace(name)
 	name = path.Clean(name)
+
+	if strings.ContainsRune(name, 47) {
+		name = filepath.ToSlash(name)
+	}
+
 	// Remove drive letter
 	if len(name) == 2 && name[1] == ':' {
 		name = ""
