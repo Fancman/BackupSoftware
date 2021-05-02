@@ -505,24 +505,28 @@ func RemoveSource(source_id int64) int {
 	return 0
 }
 
-func RemoveDestination(archive_id int64, drive_ksuid string) {
+func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
 
 	if res {
 		fmt.Println("Destination was removed succesfuly.")
+		return 1
 	}
 
 	fmt.Println("Destination was not removed.")
+	return 0
 }
 
 func RemoveDestinationByPath(destination_path string) {
-	if helper.Exists(destination_path) == nil {
-		dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
+	dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
 
-		dest_drive_ksuid := AddDrive(dest_letter)
+	dest_drive_ksuid := AddDrive(dest_letter)
+
+	if len(dest_drive_ksuid) > 0 {
 		dest_archive_name := filepath.Base(destination_path)
-
+		if len(dest_archive_name) > 0 {
+			db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
+		}
 		fmt.Println(dest_drive_ksuid, dest_archive_name)
 	}
-
 }

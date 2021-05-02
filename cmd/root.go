@@ -169,8 +169,8 @@ var (
 	}
 
 	removeDestinationCmd = &cobra.Command{
-		Use:   "remove-source -a [archive id] -d [drive ksuid]",
-		Short: "remove-source -a [archive id] -d [drive ksuid]",
+		Use:   "remove-destination -a [archive id] -d [drive ksuid]",
+		Short: "remove-destination -a [archive id] -d [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			archive_id, err_1 := cmd.Flags().GetInt64("archive-id")
@@ -222,11 +222,13 @@ func init() {
 	rootCmd.AddCommand(AddDriveCmd)
 	rootCmd.AddCommand(createBackupCmd)
 	rootCmd.AddCommand(removeSourceCmd)
+	rootCmd.AddCommand(removeDestinationCmd)
 
 	removeSourceCmd.Flags().Int64P("source-id", "s", 0, "Source ID")
 
 	removeDestinationCmd.Flags().Int64P("archive-id", "a", 0, "Archive ID")
 	removeDestinationCmd.Flags().StringP("drive-ksuid", "d", "", "Drive Ksuid")
+	removeDestinationCmd.Flags().StringP("dest-path", "p", "", "Destination path")
 
 	//rootCmd.AddCommand(createBackupCmdTest)
 

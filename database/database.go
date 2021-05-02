@@ -87,6 +87,28 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 	return true
 }
 
+func (conn *SQLite) RemoveDestinationByPath(archive_name string, ksuid string) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM backup WHERE drive_ksuid=? AND archive_id IN (SELECT id FROM archive WHERE name=?)`, ksuid, archive_name)
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM archive WHERE name=? AND NOT EXISTS (SELECT * FROM backup WHERE archive_id IN (SELECT id FROM archive WHERE name=?))`, archive_name, archive_name)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 // Removes record from source table
 func (conn *SQLite) RemoveSource(source_id int64) bool {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
