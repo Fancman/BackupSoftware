@@ -519,7 +519,6 @@ func RemoveDestination(archive_id int64, drive_ksuid string) int {
 
 func RemoveDestinationByPath(destination_path string) {
 	dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
-
 	dest_drive_ksuid := AddDrive(dest_letter)
 
 	if len(dest_drive_ksuid) > 0 {
@@ -527,6 +526,5 @@ func RemoveDestinationByPath(destination_path string) {
 		if len(dest_archive_name) > 0 {
 			db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
 		}
-		fmt.Println(dest_drive_ksuid, dest_archive_name)
 	}
 }

@@ -94,9 +94,20 @@ func (conn *SQLite) RemoveDestinationByPath(archive_name string, ksuid string) b
 		return false
 	}
 
-	_, err = conn.db.Exec(`DELETE FROM backup WHERE drive_ksuid=? AND archive_id IN (SELECT id FROM archive WHERE name=?)`, ksuid, archive_name)
+	res, err := conn.db.Exec(`DELETE FROM backup WHERE drive_ksuid=? AND archive_id IN (SELECT id FROM archive WHERE name=?)`, ksuid, archive_name)
 
 	if err != nil {
+		return false
+	}
+
+	affected_rows, err := res.RowsAffected()
+
+	if err != nil {
+		return false
+	}
+
+	if affected_rows == 0 {
+		fmt.Println("0 rows in database were deleted.")
 		return false
 	}
 

@@ -160,9 +160,11 @@ var (
 
 			source_id, err := cmd.Flags().GetInt64("source-id")
 
-			if err == nil {
-				RemoveSource(source_id)
+			if err != nil {
+				return err
 			}
+
+			RemoveSource(source_id)
 
 			return nil
 		},
@@ -174,16 +176,27 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			archive_id, err_1 := cmd.Flags().GetInt64("archive-id")
-
 			drive_ksuid, err_2 := cmd.Flags().GetString("drive-ksuid")
 
-			if err_1 == nil || err_2 == nil {
+			if err_1 != nil {
+				return err_1
+			}
+
+			if err_2 != nil {
+				return err_2
+			}
+
+			if archive_id != 0 && drive_ksuid != "" {
 				RemoveDestination(archive_id, drive_ksuid)
 			}
 
 			destination_path, err := cmd.Flags().GetString("dest-path")
 
-			if err == nil {
+			if err != nil {
+				return err
+			}
+
+			if destination_path != "" {
 				RemoveDestinationByPath(destination_path)
 			}
 
