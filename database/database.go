@@ -529,7 +529,7 @@ func (conn *SQLite) TestDatabase(database_path string) sql.NullTime {
 }
 
 // Inserts record into table drives
-func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
+func (conn *SQLite) InsertDriveDB(ksuid string, drive_name string) int64 {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
@@ -537,8 +537,13 @@ func (conn *SQLite) InsertDriveDB(ksuid string) int64 {
 		return 0
 	}
 
-	result, err := conn.Exec(
-		`INSERT INTO drive(drive_ksuid) VALUES (?)`, ksuid)
+	var result sql.Result
+
+	if drive_name == "" {
+		result, err = conn.Exec(`INSERT INTO drive(drive_ksuid) VALUES (?)`, ksuid)
+	} else {
+		result, err = conn.Exec(`INSERT INTO drive(drive_ksuid, name) VALUES (?, ?)`, ksuid, drive_name)
+	}
 
 	if err != nil {
 		return 0

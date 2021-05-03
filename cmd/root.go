@@ -60,7 +60,7 @@ var (
 	}
 
 	AddDriveCmd = &cobra.Command{
-		Use:   "add-drive [drive_letter_identification]",
+		Use:   "add-drive [drive_letter_identification] -n [Custom drive name]",
 		Short: "Add drive to db and create .drive",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -72,7 +72,13 @@ var (
 				return errors.New("Typed argument is not an alphabetic letter.")
 			}
 
-			if AddDrive(string(args[0])) != "" {
+			drive_name, err := cmd.Flags().GetString("drive-name")
+
+			if err != nil {
+				return err
+			}
+
+			if AddDrive(string(args[0]), drive_name) != "" {
 				fmt.Println("Drive was succesfully added.")
 			} else {
 				fmt.Println("Drive couldnt be added.")
@@ -236,6 +242,8 @@ func init() {
 	rootCmd.AddCommand(createBackupCmd)
 	rootCmd.AddCommand(removeSourceCmd)
 	rootCmd.AddCommand(removeDestinationCmd)
+
+	AddDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 
 	removeSourceCmd.Flags().Int64P("source-id", "s", 0, "Source ID")
 

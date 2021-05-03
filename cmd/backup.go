@@ -34,8 +34,8 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 				source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
 				backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
 
-				source_drive_ksuid := AddDrive(source_letter)
-				backup_drive_ksuid := AddDrive(backup_letter)
+				source_drive_ksuid := AddDrive(source_letter, "")
+				backup_drive_ksuid := AddDrive(backup_letter, "")
 
 				//fmt.Println("Source: " + source_letter + " - " + source_drive_ksuid)
 				//fmt.Println("Backup: " + backup_letter + " - " + backup_drive_ksuid)
@@ -417,13 +417,13 @@ func ListDrives() {
 		// If .drive exists but isnt in db
 		fmt.Print(" - " + string(lines[0]))
 		if drive_info != "" {
-			fmt.Println(" - Drive has .drive file and is in drives table.")
+			fmt.Println(" - Drive has .drive file and it is in drives table.")
 			continue
 		}
 
 		fmt.Println(" - Drive has .drive file but werent in drives table.")
 
-		id := db.InsertDriveDB(string(lines[0]))
+		id := db.InsertDriveDB(string(lines[0]), "")
 
 		if id <= 0 {
 			fmt.Println("Inserting drive record into DB failed.")
@@ -475,14 +475,14 @@ func Ksuid2Drive(ksuid string) string {
 	return ""
 }
 
-func AddDrive(drive_letter string) string {
+func AddDrive(drive_letter string, drive_name string) string {
 	if helper.Exists(drive_letter+":/.drive") != nil {
 		ksuid := helper.GenKsuid()
 
 		drive_info := db.DriveInDB(ksuid)
 
 		if drive_info == "" {
-			id := db.InsertDriveDB(ksuid)
+			id := db.InsertDriveDB(ksuid, drive_name)
 
 			if id > 0 {
 				success := CreateDiskIdentityFile(drive_letter, ksuid)
@@ -524,7 +524,7 @@ func RemoveDestination(archive_id int64, drive_ksuid string) int {
 
 func RemoveDestinationByPath(destination_path string) {
 	dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
-	dest_drive_ksuid := AddDrive(dest_letter)
+	dest_drive_ksuid := AddDrive(dest_letter, "")
 
 	if len(dest_drive_ksuid) > 0 {
 		dest_archive_name := filepath.Base(destination_path)
