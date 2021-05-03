@@ -53,11 +53,16 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 						continue
 					}
 
+					archive_ext := path.Ext(archive_name)
+
+					if db.ArchiveExists(archive_name) {
+						fmt.Println("Archive name isn't unique, so it was set to default with source id.")
+						archive_name = ""
+					}
+
 					if archive_name == "" {
 						archive_name = "backup-" + strconv.FormatInt(source_id, 10)
 					}
-
-					archive_ext := path.Ext(archive_name)
 
 					if archive_ext == "" {
 						archive_name += ".7z"

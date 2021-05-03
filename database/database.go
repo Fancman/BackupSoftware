@@ -279,6 +279,28 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	return backup_rels
 }
 
+func (conn *SQLite) ArchiveExists(archive_name string) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	var cnt int = 0
+
+	stmt := `SELECT count(*) as cnt FROM archive WHERE name = ?`
+
+	row := conn.db.QueryRow(stmt, archive_name)
+
+	err = row.Scan(&cnt)
+
+	if err == nil && cnt != 0 {
+		return true
+	}
+
+	return false
+}
+
 func (conn *SQLite) CreateArchive(archive_name string) int64 {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
@@ -419,7 +441,7 @@ func (conn *SQLite) Fixtures() error {
 		);`,
 		`CREATE TABLE IF NOT EXISTS "archive" (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name VARCHAR
+			name VARCHAR NOT NULL UNIQUE
 		);`,
 		`CREATE TABLE IF NOT EXISTS "backup" (
 			archive_id INTEGER,
