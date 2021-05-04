@@ -196,7 +196,7 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 	return destinations, source, archive_name, backup_ksuids
 }
 
-func RestoreFileDir(source_id int64) {
+func RestoreFileDir(source_id int64, backup_paths []string) {
 	var backup_rels = db.FindBackups(source_id)
 
 	destinations, source, archive_name, _ := TransformBackups(backup_rels)
@@ -227,14 +227,19 @@ func RestoreFileDir(source_id int64) {
 	}
 
 	for _, destination := range destinations {
-		_, err = os.Stat(destination + "/" + archive_name)
+		archive_path := destination + "/" + archive_name
+		_, err = os.Stat(archive_path)
 
-		if os.IsNotExist(err) {
-			fmt.Println("Couldnt be restored because archive doesnt exist.")
+		if len(backup_paths) > 0 && !helper.FindElm(backup_paths, archive_path) {
 			continue
 		}
 
-		args := []string{"x", destination + "/" + archive_name, "-y", "-o" + source}
+		if os.IsNotExist(err) {
+			fmt.Println("Couldnt be restored because archive doesn't exist.")
+			continue
+		}
+
+		args := []string{"x", archive_path, "-y", "-o" + source}
 
 		cmd := exec.Command(path7z, args...)
 		cmd.Stdout = os.Stdout
@@ -386,6 +391,17 @@ func BackupDatabase() {
 
 }
 
+func NewDriveRecord(drive_letter string) database.DriveRecord {
+	drive_record := database.DriveRecord{}
+	drive_record.Letter = drive_letter
+	drive_record.File_exists = false
+	drive_record.File_accesible = false
+	drive_record.Ksuid = ""
+	drive_record.Database_exists = false
+	drive_record.Database_inserted = false
+	return drive_record
+}
+
 // Lists drives and their statuses
 func ListDrives() {
 	drives := helper.GetDrives()
@@ -395,43 +411,77 @@ func ListDrives() {
 		return
 	}
 
+	var drive_records []database.DriveRecord
+
 	for _, drive_letter := range drives {
 
-		fmt.Print(drive_letter)
+		var drive_record = NewDriveRecord(drive_letter)
 
 		if helper.Exists(drive_letter+":/.drive") != nil {
-			fmt.Println(" - Drive doesn't have a .drive file")
+			fmt.Println(drive_letter + " - Drive doesn't have a .drive file")
+			drive_records = append(drive_records, drive_record)
 			continue
 		}
+
+		drive_record.File_exists = true
 
 		// ak ma .drive subor a nie je zapisane v db
 		lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
 
 		if err != nil {
-			fmt.Printf("Error pri citani suboru: %s\n", err)
+			fmt.Println(drive_letter + " - .drive file isn't accesible.")
+			drive_records = append(drive_records, drive_record)
 			continue
 		}
+
+		drive_record.File_accesible = true
+		drive_record.Ksuid = string(lines[0])
 
 		drive_info := db.DriveInDB(string(lines[0]))
 
 		// If .drive exists but isnt in db
-		fmt.Print(" - " + string(lines[0]))
+		//fmt.Print(" - " + string(lines[0]))
 		if drive_info != "" {
-			fmt.Println(" - Drive has .drive file and it is in drives table.")
+			//fmt.Println(" - Drive has .drive file and it is in drives table.")
+			//fmt.Println(drive_letter + " - .drive file is accesible but drive is not in DB.")
+			drive_records = append(drive_records, drive_record)
 			continue
 		}
 
-		fmt.Println(" - Drive has .drive file but werent in drives table.")
+		drive_record.Database_exists = true
+
+		//fmt.Println(" - Drive has .drive file but werent in drives table.")
 
 		id := db.InsertDriveDB(string(lines[0]), "")
 
 		if id <= 0 {
-			fmt.Println("Inserting drive record into DB failed.")
+			fmt.Println("Inserting " + drive_letter + " drive record into DB failed.")
+			drive_records = append(drive_records, drive_record)
 			continue
 		}
 
-		fmt.Println("Drive was added to DB.")
+		fmt.Println(drive_letter + " drive was successfully inserted into DB.")
+
+		drive_record.Database_inserted = true
+
+		//fmt.Println("Drive was added to DB.")
 	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Drive Letter", ".drive exists", ".drive accesible", "Ksuid", "In DB", "Inserted into DB"})
+
+	for _, v := range drive_records {
+		var table_row []string
+		table_row = append(table_row, v.Letter)
+		table_row = append(table_row, strconv.FormatBool(v.File_exists))
+		table_row = append(table_row, strconv.FormatBool(v.File_accesible))
+		table_row = append(table_row, v.Ksuid)
+		table_row = append(table_row, strconv.FormatBool(v.Database_exists))
+		table_row = append(table_row, strconv.FormatBool(v.Database_inserted))
+
+		table.Append(table_row)
+	}
+	table.Render()
 }
 
 /*func DriveLetter2Ksuid(drive_letter string) (string, error) {

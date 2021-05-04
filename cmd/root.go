@@ -59,13 +59,13 @@ var (
 		},
 	}
 
-	AddDriveCmd = &cobra.Command{
+	addDriveCmd = &cobra.Command{
 		Use:   "add-drive [drive_letter_identification] -n [Custom drive name]",
-		Short: "Add drive to db and create .drive",
+		Short: "Add drive to db with optional custom name and create .drive file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 1 {
-				return errors.New("You have to enter exactly one drive indetification.")
+				return errors.New("You have to enter exactly one drive identification.")
 			}
 
 			if (args[0] < "a" || args[0] > "z") && (args[0] < "A" || args[0] > "Z") {
@@ -113,7 +113,7 @@ var (
 	}
 
 	startRestoreCmd = &cobra.Command{
-		Use:   "start-restore [source id]",
+		Use:   "start-restore [source id] -b [backup paths]",
 		Short: "Start restore from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -127,7 +127,7 @@ var (
 				return errors.New("Entered backup id have to be an integer type")
 			}
 
-			RestoreFileDir(i)
+			RestoreFileDir(i, backup_paths)
 
 			//backup := find_backup(db, i)
 			//start_restore(backup.id, backup.source, backup.destinations)
@@ -238,12 +238,14 @@ func init() {
 
 	rootCmd.AddCommand(listDrivesCmd)
 	rootCmd.AddCommand(listBackupsCmd)
-	rootCmd.AddCommand(AddDriveCmd)
+	rootCmd.AddCommand(addDriveCmd)
 	rootCmd.AddCommand(createBackupCmd)
 	rootCmd.AddCommand(removeSourceCmd)
 	rootCmd.AddCommand(removeDestinationCmd)
+	rootCmd.AddCommand(startBackupCmd)
+	rootCmd.AddCommand(startRestoreCmd)
 
-	AddDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
+	addDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 
 	removeSourceCmd.Flags().Int64P("source-id", "s", 0, "Source ID")
 
@@ -258,6 +260,8 @@ func init() {
 	createBackupCmd.Flags().StringArrayVarP(&backup_paths, "destination", "d", make([]string, 0), "destination path")
 	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
+	startRestoreCmd.Flags().StringArrayVarP(&backup_paths, "backup", "b", make([]string, 0), "backup paths")
+
 	//BackupFileDir(10)
 
 	//RestoreFileDir(10)
@@ -266,9 +270,6 @@ func init() {
 	createBackupCmd.Flags().StringVarP(&dest_drive_ksuid, "drive_ksuid", "k", "", "destination drive ksuid")
 	createBackupCmd.Flags().StringVarP(&dest_drive_letter, "destination drive letter", "d", "", "destination drive letter")
 	createBackupCmd.Flags().StringVarP(&dest_path, "additional path", "p", "", "additional path")*/
-
-	rootCmd.AddCommand(startBackupCmd)
-	rootCmd.AddCommand(startRestoreCmd)
 
 	//singleCmd.Flags().StringVarP(&options.File, "file", "f", "", "file containing urls. use - for stdin")
 	//rootCmd.AddCommand(rootCmd)

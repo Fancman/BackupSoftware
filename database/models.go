@@ -24,3 +24,12 @@ type BackupRel struct {
 	Archive     Archive
 	Archived_at sql.NullTime
 }
+
+type DriveRecord struct {
+	Letter            string
+	File_exists       bool
+	File_accesible    bool
+	Ksuid             string
+	Database_exists   bool
+	Database_inserted bool
+}

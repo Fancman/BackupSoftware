@@ -120,6 +120,15 @@ func GetKsuidFromDrive(drive_letter string) string {
 	return ""
 }
 
+func FindElm(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
 // File exists?
 /*func Exists(filename string) bool {
 	info, err := os.Stat(filename)
