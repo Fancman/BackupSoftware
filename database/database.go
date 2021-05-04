@@ -555,24 +555,24 @@ func (conn *SQLite) InsertDriveDB(ksuid string, drive_name string) int64 {
 }
 
 // Returns drive by ksuid from db
-func (conn *SQLite) DriveInDB(drive_ksuid string) (string, string) {
+func (conn *SQLite) DriveInDB(drive_ksuid string) (string, sql.NullString) {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return "", ""
+		return "", sql.NullString{}
 	}
 
 	stmt := `SELECT drive_ksuid, name FROM drive
 	WHERE drive_ksuid=?`
 	var r_ksuid string
-	var r_name string
+	var r_name sql.NullString
 
 	row := conn.db.QueryRow(stmt, drive_ksuid)
 	switch err := row.Scan(&r_ksuid, &r_name); err {
 	case nil:
 		return r_ksuid, r_name
 	default:
-		return "", ""
+		return "", sql.NullString{}
 	}
 }
 

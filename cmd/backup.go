@@ -440,10 +440,8 @@ func ListDrives() {
 
 		drive_info, drive_name := db.DriveInDB(string(lines[0]))
 
-		// If .drive exists but isnt in db
-		//fmt.Print(" - " + string(lines[0]))
 		if drive_info != "" {
-			drive_record.Name = drive_name
+			drive_record.Name = drive_name.String
 			drive_records = append(drive_records, drive_record)
 			continue
 		}
