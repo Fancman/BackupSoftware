@@ -27,6 +27,7 @@ type BackupRel struct {
 
 type DriveRecord struct {
 	Letter            string
+	Name              string
 	File_exists       bool
 	File_accesible    bool
 	Ksuid             string

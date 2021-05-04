@@ -394,6 +394,7 @@ func BackupDatabase() {
 func NewDriveRecord(drive_letter string) database.DriveRecord {
 	drive_record := database.DriveRecord{}
 	drive_record.Letter = drive_letter
+	drive_record.Name = ""
 	drive_record.File_exists = false
 	drive_record.File_accesible = false
 	drive_record.Ksuid = ""
@@ -437,13 +438,12 @@ func ListDrives() {
 		drive_record.File_accesible = true
 		drive_record.Ksuid = string(lines[0])
 
-		drive_info := db.DriveInDB(string(lines[0]))
+		drive_info, drive_name := db.DriveInDB(string(lines[0]))
 
 		// If .drive exists but isnt in db
 		//fmt.Print(" - " + string(lines[0]))
 		if drive_info != "" {
-			//fmt.Println(" - Drive has .drive file and it is in drives table.")
-			//fmt.Println(drive_letter + " - .drive file is accesible but drive is not in DB.")
+			drive_record.Name = drive_name
 			drive_records = append(drive_records, drive_record)
 			continue
 		}
@@ -468,11 +468,12 @@ func ListDrives() {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Drive Letter", ".drive exists", ".drive accesible", "Ksuid", "In DB", "Inserted into DB"})
+	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid", "In DB", "Inserted into DB"})
 
 	for _, v := range drive_records {
 		var table_row []string
 		table_row = append(table_row, v.Letter)
+		table_row = append(table_row, v.Name)
 		table_row = append(table_row, strconv.FormatBool(v.File_exists))
 		table_row = append(table_row, strconv.FormatBool(v.File_accesible))
 		table_row = append(table_row, v.Ksuid)
@@ -529,7 +530,7 @@ func AddDrive(drive_letter string, drive_name string) string {
 	if helper.Exists(drive_letter+":/.drive") != nil {
 		ksuid := helper.GenKsuid()
 
-		drive_info := db.DriveInDB(ksuid)
+		drive_info, _ := db.DriveInDB(ksuid)
 
 		if drive_info == "" {
 			id := db.InsertDriveDB(ksuid, drive_name)
