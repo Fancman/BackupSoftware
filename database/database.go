@@ -170,7 +170,7 @@ func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int 
 	err = row.Scan(&cnt)
 
 	if err == nil && cnt != 0 {
-		_, err := conn.Exec(`UPDATE timestamp SET updated_at = strftime('%s', 'now') where source_id = ? AND drive_ksuid = ?`, source_id, drive_ksuid)
+		_, err := conn.Exec(`UPDATE timestamp SET archived_at = strftime('%s', 'now') where source_id = ? AND drive_ksuid = ?`, source_id, drive_ksuid)
 
 		if err == nil {
 			return 1
@@ -204,7 +204,7 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	b."path" as backup_path,
 	a.id as archive_id,
 	a.name as archive_name,
-	t.updated_at as archived_at
+	t.archived_at as archived_at
 	from "backup" b 
 	---------------
 	left join "source" s 
@@ -479,7 +479,7 @@ func (conn *SQLite) Fixtures() error {
 		`CREATE TABLE IF NOT EXISTS "timestamp" (
 			source_id INTEGER,
 			drive_ksuid VARCHAR,
-			created_at timestamp DEFAULT (strftime('%s', 'now')) NOT NULL,
+			archived_at timestamp DEFAULT (strftime('%s', 'now')) NOT NULL,
 			CONSTRAINT timestamp_PK PRIMARY KEY (source_id,drive_ksuid),
 			CONSTRAINT timestamp_FK FOREIGN KEY (source_id) REFERENCES "source"(id),
 			CONSTRAINT timestamp_FK_1 FOREIGN KEY (drive_ksuid) REFERENCES drive(drive_ksuid)
