@@ -551,7 +551,11 @@ func AddDrive(drive_letter string, drive_name string) string {
 		return ""
 	}
 
-	drive_info, _ := db.DriveInDB(ksuid)
+	drive_info, saved_drive_name := db.DriveInDB(ksuid)
+
+	if drive_name != "" && drive_name != saved_drive_name.String {
+		db.UpdateDriveName(ksuid, drive_name)
+	}
 
 	if drive_info != "" {
 		return ksuid

@@ -406,6 +406,23 @@ func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64
 	return id
 }
 
+func (conn *SQLite) UpdateDriveName(drive_ksuid string, new_name string) int {
+
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return 0
+	}
+
+	_, err = conn.Exec(`UPDATE drive SET name = ? where drive_ksuid = ?`, new_name, drive_ksuid)
+
+	if err != nil {
+		return 0
+	}
+
+	return 1
+}
+
 // Creates database if doesnt exist
 func CreateDB() error {
 	var database_path = helper.GetDatabaseFile()
