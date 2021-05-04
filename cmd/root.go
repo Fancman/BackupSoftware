@@ -30,7 +30,7 @@ var (
 
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
-		Short: "List stored backup records",
+		Short: "List stored backup records.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ListBackups()
 			/*backups := list_backups(conn)
@@ -62,6 +62,7 @@ var (
 	addDriveCmd = &cobra.Command{
 		Use:   "add-drive [drive_letter_identification] -n [Custom drive name]",
 		Short: "Add drive to db with optional custom name and create .drive file",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 1 {
@@ -148,9 +149,17 @@ var (
 
 	createBackupCmd = &cobra.Command{
 		Use:   "create-backup -s [source path] -d [destination path] -a [archive name]",
-		Short: "create-backup -s [source path] -d [destination path] -a [archive name]",
+		Short: "Create backup record from source and destination paths. Archive name is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source_paths)
+			if len(source_paths) == 0 {
+				return errors.New("Requires atleast one source path.")
+			}
+
+			if len(backup_paths) == 0 {
+				return errors.New("Requires atleast one destination path.")
+			}
+
 			CreateSourceBackup(source_paths, backup_paths, archive_name)
 			//CreateSourceBackup("C:/Users/tomas/Pictures/Backgrounds", "E:/backup", "test.7z")
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
@@ -259,6 +268,8 @@ func init() {
 	createBackupCmd.Flags().StringArrayVarP(&source_paths, "source", "s", make([]string, 0), "sources paths")
 	createBackupCmd.Flags().StringArrayVarP(&backup_paths, "destination", "d", make([]string, 0), "destination path")
 	createBackupCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
+	createBackupCmd.MarkFlagRequired("source")
+	createBackupCmd.MarkFlagRequired("destination")
 
 	startRestoreCmd.Flags().StringArrayVarP(&backup_paths, "backup", "b", make([]string, 0), "backup paths")
 

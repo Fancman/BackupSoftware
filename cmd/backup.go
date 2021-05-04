@@ -325,7 +325,7 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	file, err := os.Create(drive_letter + ":/.drive")
 
 	if err != nil {
-		fmt.Printf("Nepodarilo sa vytvorit subor %s\n", err)
+		fmt.Printf("Drive does not exist or is not accessible. %s\n", err)
 		db.DelDriveDB(ksuid)
 		return false
 	}
@@ -425,20 +425,17 @@ func ListDrives() {
 		}
 
 		drive_record.File_exists = true
+		drive_record.Ksuid = helper.GetKsuidFromDrive(drive_letter)
 
-		// ak ma .drive subor a nie je zapisane v db
-		lines, err := helper.ReadFileLines(drive_letter + ":/.drive")
-
-		if err != nil {
+		if drive_record.Ksuid == "" {
 			fmt.Println(drive_letter + " - .drive file isn't accesible.")
 			drive_records = append(drive_records, drive_record)
 			continue
 		}
 
 		drive_record.File_accesible = true
-		drive_record.Ksuid = string(lines[0])
 
-		drive_info, drive_name := db.DriveInDB(string(lines[0]))
+		drive_info, drive_name := db.DriveInDB(drive_record.Ksuid)
 
 		if drive_info != "" {
 			drive_record.Name = drive_name.String
@@ -450,9 +447,9 @@ func ListDrives() {
 
 		//fmt.Println(" - Drive has .drive file but werent in drives table.")
 
-		id := db.InsertDriveDB(string(lines[0]), "")
+		res := db.InsertDriveDB(drive_record.Ksuid, "")
 
-		if id <= 0 {
+		if res <= 0 {
 			fmt.Println("Inserting " + drive_letter + " drive record into DB failed.")
 			drive_records = append(drive_records, drive_record)
 			continue
@@ -462,21 +459,21 @@ func ListDrives() {
 
 		drive_record.Database_inserted = true
 
-		//fmt.Println("Drive was added to DB.")
+		drive_records = append(drive_records, drive_record)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid", "In DB", "Inserted into DB"})
 
-	for _, v := range drive_records {
+	for _, d := range drive_records {
 		var table_row []string
-		table_row = append(table_row, v.Letter)
-		table_row = append(table_row, v.Name)
-		table_row = append(table_row, strconv.FormatBool(v.File_exists))
-		table_row = append(table_row, strconv.FormatBool(v.File_accesible))
-		table_row = append(table_row, v.Ksuid)
-		table_row = append(table_row, strconv.FormatBool(v.Database_exists))
-		table_row = append(table_row, strconv.FormatBool(v.Database_inserted))
+		table_row = append(table_row, d.Letter)
+		table_row = append(table_row, d.Name)
+		table_row = append(table_row, strconv.FormatBool(d.File_exists))
+		table_row = append(table_row, strconv.FormatBool(d.File_accesible))
+		table_row = append(table_row, d.Ksuid)
+		table_row = append(table_row, strconv.FormatBool(d.Database_exists))
+		table_row = append(table_row, strconv.FormatBool(d.Database_inserted))
 
 		table.Append(table_row)
 	}
@@ -525,8 +522,10 @@ func Ksuid2Drive(ksuid string) string {
 }
 
 func AddDrive(drive_letter string, drive_name string) string {
+	var ksuid string
+
 	if helper.Exists(drive_letter+":/.drive") != nil {
-		ksuid := helper.GenKsuid()
+		ksuid = helper.GenKsuid()
 
 		drive_info, _ := db.DriveInDB(ksuid)
 
@@ -542,9 +541,29 @@ func AddDrive(drive_letter string, drive_name string) string {
 
 			return ""
 		}
+
+		AddDrive(drive_letter, drive_name)
 	}
 
-	return helper.GetKsuidFromDrive(drive_letter)
+	ksuid = helper.GetKsuidFromDrive(drive_letter)
+
+	if ksuid == "" {
+		return ""
+	}
+
+	drive_info, _ := db.DriveInDB(ksuid)
+
+	if drive_info != "" {
+		return ksuid
+	}
+
+	res := db.InsertDriveDB(ksuid, drive_name)
+
+	if res <= 0 {
+		return ""
+	}
+
+	return ksuid
 }
 
 func RemoveSource(source_id int64) int {
