@@ -398,8 +398,6 @@ func NewDriveRecord(drive_letter string) database.DriveRecord {
 	drive_record.File_exists = false
 	drive_record.File_accesible = false
 	drive_record.Ksuid = ""
-	drive_record.Database_exists = false
-	drive_record.Database_inserted = false
 	return drive_record
 }
 
@@ -443,8 +441,6 @@ func ListDrives() {
 			continue
 		}
 
-		drive_record.Database_exists = true
-
 		//fmt.Println(" - Drive has .drive file but werent in drives table.")
 
 		res := db.InsertDriveDB(drive_record.Ksuid, "")
@@ -457,13 +453,11 @@ func ListDrives() {
 
 		fmt.Println(drive_letter + " drive was successfully inserted into DB.")
 
-		drive_record.Database_inserted = true
-
 		drive_records = append(drive_records, drive_record)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid", "In DB", "Inserted into DB"})
+	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid"})
 
 	for _, d := range drive_records {
 		var table_row []string
@@ -472,8 +466,6 @@ func ListDrives() {
 		table_row = append(table_row, strconv.FormatBool(d.File_exists))
 		table_row = append(table_row, strconv.FormatBool(d.File_accesible))
 		table_row = append(table_row, d.Ksuid)
-		table_row = append(table_row, strconv.FormatBool(d.Database_exists))
-		table_row = append(table_row, strconv.FormatBool(d.Database_inserted))
 
 		table.Append(table_row)
 	}
