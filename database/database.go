@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -301,12 +302,12 @@ func (conn *SQLite) ArchiveExists(archive_name string) bool {
 	return false
 }
 
-func (conn *SQLite) CreateArchive(archive_name string) int64 {
+func (conn *SQLite) CreateArchive(archive_name string) (int64, error) {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
 	stmt := `SELECT id FROM archive WHERE name = ?`
@@ -316,18 +317,18 @@ func (conn *SQLite) CreateArchive(archive_name string) int64 {
 	err = row.Scan(&archive_id)
 
 	if err == nil {
-		return archive_id
+		return archive_id, errors.New("Archive name is not unique.")
 	}
 
 	result, err := conn.Exec(`INSERT INTO archive(name) VALUES (?)`, archive_name)
 
 	if err != nil {
-		return 0
+		return 0, err
 	}
 
 	id, err := result.LastInsertId()
 
-	return id
+	return id, err
 }
 
 func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {

@@ -54,24 +54,32 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 					}
 
 					archive_ext := path.Ext(archive_name)
-
-					if db.ArchiveExists(archive_name) {
-						fmt.Println("Archive name isn't unique, so it was set to default with source id.")
-						archive_name = ""
-					}
+					archive_name := helper.FileNameWithoutExtension(archive_name)
+					default_archive_name := "backup-" + strconv.FormatInt(source_id, 10)
 
 					if archive_name == "" {
-						archive_name = "backup-" + strconv.FormatInt(source_id, 10)
+						archive_name = default_archive_name
 					}
 
 					if archive_ext == "" {
-						archive_name += ".7z"
+						archive_ext = "7z"
 					}
 
-					archive_id := db.CreateArchive(archive_name)
+					archive_id, err := db.CreateArchive(archive_name + "." + archive_ext)
 
-					if archive_id == 0 {
-						continue
+					if err != nil {
+						fmt.Println(err)
+
+						if archive_id == 0 {
+							continue
+						}
+
+						archive_id, err = db.CreateArchive(default_archive_name + "." + archive_ext)
+
+						if err != nil {
+							fmt.Println(err)
+							continue
+						}
 					}
 
 					res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)

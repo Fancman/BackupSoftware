@@ -129,6 +129,10 @@ func FindElm(slice []string, val string) bool {
 	return false
 }
 
+func FileNameWithoutExtension(fileName string) string {
+	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+}
+
 // File exists?
 /*func Exists(filename string) bool {
 	info, err := os.Stat(filename)
