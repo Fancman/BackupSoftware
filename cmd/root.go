@@ -47,7 +47,7 @@ var (
 
 	listDrivesCmd = &cobra.Command{
 		Use:   "list-drives",
-		Short: "List available drives",
+		Short: "List available drives.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			/*if len(args) == 0 {
 				return errors.New("You have to enter target of action.")
@@ -60,7 +60,7 @@ var (
 	}
 
 	addDriveCmd = &cobra.Command{
-		Use:   "add-drive [drive_letter_identification] -n [Custom drive name]",
+		Use:   "add-drive [drive letter] -n [Custom drive name]",
 		Short: "Add drive to db with optional custom name and create .drive file",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -148,7 +148,7 @@ var (
 	}*/
 
 	createBackupCmd = &cobra.Command{
-		Use:   "create-backup -s [source path] -d [destination path] -a [archive name]",
+		Use:   "create-backup -s [source paths] -d [destination paths] -a [archive name]",
 		Short: "Create backup record from source and destination paths. Archive name is optional.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source_paths)
@@ -234,6 +234,15 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+}
+
+func TestRootCmd() *cobra.Command {
+	return &cobra.Command{
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprintf(cmd.OutOrStdout(), args[0])
+			return nil
+		},
 	}
 }
 

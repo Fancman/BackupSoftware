@@ -18,7 +18,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-//func AddSource()
+// Creates records for source-backup relation
+// Archive name is optional
 func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) {
 	fmt.Println("Sources: " + strings.Join(source_paths, ", "))
 	fmt.Println("Backups: " + strings.Join(backup_paths, ", "))
@@ -37,15 +38,9 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 				source_drive_ksuid := AddDrive(source_letter, "")
 				backup_drive_ksuid := AddDrive(backup_letter, "")
 
-				//fmt.Println("Source: " + source_letter + " - " + source_drive_ksuid)
-				//fmt.Println("Backup: " + backup_letter + " - " + backup_drive_ksuid)
-
 				if source_drive_ksuid != "" && backup_drive_ksuid != "" {
 					source_path := helper.RemoveDriveLetter(source_path)
 					backup_path := helper.RemoveDriveLetter(backup_path)
-
-					//fmt.Println(source_path)
-					//fmt.Println(backup_path)
 
 					source_id := db.CreateSource(source_drive_ksuid, source_path)
 
@@ -62,10 +57,10 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 					}
 
 					if archive_ext == "" {
-						archive_ext = "7z"
+						archive_ext = ".7z"
 					}
 
-					archive_id, err := db.CreateArchive(archive_name + "." + archive_ext)
+					archive_id, err := db.CreateArchive(archive_name + archive_ext)
 
 					if err != nil {
 						fmt.Println(err)
@@ -74,7 +69,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 							continue
 						}
 
-						archive_id, err = db.CreateArchive(default_archive_name + "." + archive_ext)
+						archive_id, err = db.CreateArchive(default_archive_name + archive_ext)
 
 						if err != nil {
 							fmt.Println(err)
@@ -84,7 +79,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 					res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
 
-					if res == false {
+					if !res {
 						continue
 					}
 
