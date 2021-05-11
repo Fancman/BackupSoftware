@@ -348,7 +348,7 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 
 	if err == nil {
 		fmt.Println("Source path already exists, archive will be updated.")
-		return id
+		return -1
 	}
 
 	result, err := conn.Exec(`INSERT INTO source(drive_ksuid, path) VALUES (?, ?)`, drive_ksuid, path)

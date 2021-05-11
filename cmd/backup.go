@@ -65,6 +65,10 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 					continue
 				}
 
+				if source_id == -1 {
+					continue
+				}
+
 				err = db.UpdateSourceArchive(source_id, archive_id)
 
 				if err == nil {

@@ -98,7 +98,7 @@ var (
 
 	startBackupCmd = &cobra.Command{
 		Use:   "start-backup -s [source ids]",
-		Short: "Start backup from record in db by its id",
+		Short: "Start backup for record in db by its ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(source_ids) == 0 {
