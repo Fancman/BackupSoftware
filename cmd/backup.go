@@ -43,6 +43,8 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 		archive_id, err = db.CreateArchive(default_archive_name + archive_ext)
 
+		fmt.Println("Archive name was set to: " + default_archive_name + archive_ext)
+
 		if err != nil {
 			fmt.Println(err)
 			return err

@@ -347,6 +347,7 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 	err = row.Scan(&id)
 
 	if err == nil {
+		fmt.Println("Source path already exists, archive will be updated.")
 		return id
 	}
 
