@@ -186,10 +186,10 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 				destinations = append(destinations, destination)
 				backup_ksuids = append(backup_ksuids, b.Ksuid)
 
-				err := os.MkdirAll(destination, os.ModePerm)
+				/*err := os.MkdirAll(destination, os.ModePerm)
 				if err != nil {
 					fmt.Println(err.Error())
-				}
+				}*/
 			}
 		}
 	}
@@ -202,10 +202,6 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 		var backup_rels = db.FindBackups(source_id)
 
 		destinations, source, archive_name, _ := TransformBackups(backup_rels)
-
-		//fmt.Println(destinations)
-		//fmt.Println(source)
-		//fmt.Println(archive_name)
 
 		_, err := os.Stat(source)
 
@@ -229,7 +225,9 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 		}
 
 		for _, destination := range destinations {
+			var removed bool = false
 			archive_path := destination + "/" + archive_name
+
 			_, err = os.Stat(archive_path)
 
 			if len(backup_paths) > 0 && !helper.FindElm(backup_paths, archive_path) {
@@ -241,7 +239,21 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 				continue
 			}
 
-			args := []string{"x", archive_path, "-y", "-o" + source}
+			output_path := ""
+
+			source_parts := strings.Split(source, `\`)
+
+			for i := len(source_parts) - 1; i >= 0; i-- {
+				if source_parts[i] != "" {
+					if !removed {
+						removed = true
+					} else {
+						output_path = source_parts[i] + `\` + output_path
+					}
+				}
+			}
+
+			args := []string{"x", archive_path, "-y", "-o" + output_path, filepath.Base(source)}
 
 			cmd := exec.Command(path7z, args...)
 			cmd.Stdout = os.Stdout
