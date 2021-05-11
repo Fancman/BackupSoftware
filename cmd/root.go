@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	//"strconv"
 
 	"github.com/Fancman/BackupSoftware/database"
+	helper "github.com/Fancman/BackupSoftware/helpers"
 	"github.com/spf13/cobra"
 )
 
@@ -162,6 +165,18 @@ var (
 
 			if len(backup_paths) == 0 {
 				return errors.New("requires atleast one destination path")
+			}
+
+			var backup_drives []string
+
+			for _, backup_path := range backup_paths {
+				backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+
+				if helper.FindElm(backup_drives, backup_letter) {
+					return errors.New("destinations have to be on different drives")
+				}
+
+				backup_drives = append(backup_drives, backup_letter)
 			}
 
 			CreateSourceBackup(source_paths, backup_paths, archive_name)
