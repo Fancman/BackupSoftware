@@ -28,7 +28,7 @@ func TestAddDrive_02(t *testing.T) {
 
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
-	cmd.SetArgs([]string{"add-drive C"})
+	cmd.SetArgs([]string{"add-drive"})
 	cmd.Execute()
 	out, err := ioutil.ReadAll(b)
 	if err != nil {

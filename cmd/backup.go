@@ -51,7 +51,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 		}
 	}
 
-	fmt.Println("Archive id: " + strconv.FormatInt(archive_id, 10))
+	//fmt.Println("Archive id: " + strconv.FormatInt(archive_id, 10))
 
 	for _, source_path := range source_paths {
 		if helper.Exists(source_path) == nil {
@@ -197,116 +197,122 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, strin
 	return destinations, source, archive_name, backup_ksuids
 }
 
-func RestoreFileDir(source_id int64, backup_paths []string) {
-	var backup_rels = db.FindBackups(source_id)
+func RestoreFileDir(source_ids []int64, backup_paths []string) {
+	for _, source_id := range source_ids {
+		var backup_rels = db.FindBackups(source_id)
 
-	destinations, source, archive_name, _ := TransformBackups(backup_rels)
+		destinations, source, archive_name, _ := TransformBackups(backup_rels)
 
-	//fmt.Println(destinations)
-	//fmt.Println(source)
-	//fmt.Println(archive_name)
+		//fmt.Println(destinations)
+		//fmt.Println(source)
+		//fmt.Println(archive_name)
 
-	_, err := os.Stat(source)
-
-	if os.IsNotExist(err) {
-		fmt.Println("File does not exist.")
-	}
-
-	fmt.Println("Restoring [" + strings.Join(destinations, "/"+archive_name+", ") + "] to " + source)
-
-	cmd7zExists := helper.CommandAvailable("7z")
-	path7z := "7z"
-
-	if !cmd7zExists {
-		_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+		_, err := os.Stat(source)
 
 		if os.IsNotExist(err) {
-			fmt.Println("7z executable isnt accesible.")
+			fmt.Println("File does not exist.")
 		}
 
-		path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
+		fmt.Println("Restoring [" + strings.Join(destinations, "/"+archive_name+", ") + "] to " + source)
+
+		cmd7zExists := helper.CommandAvailable("7z")
+		path7z := "7z"
+
+		if !cmd7zExists {
+			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+
+			if os.IsNotExist(err) {
+				fmt.Println("7z executable isnt accesible.")
+			}
+
+			path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
+		}
+
+		for _, destination := range destinations {
+			archive_path := destination + "/" + archive_name
+			_, err = os.Stat(archive_path)
+
+			if len(backup_paths) > 0 && !helper.FindElm(backup_paths, archive_path) {
+				continue
+			}
+
+			if os.IsNotExist(err) {
+				fmt.Println("Couldnt be restored because archive doesn't exist.")
+				continue
+			}
+
+			args := []string{"x", archive_path, "-y", "-o" + source}
+
+			cmd := exec.Command(path7z, args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+				//return err
+			}
+
+			break
+		}
 	}
 
-	for _, destination := range destinations {
-		archive_path := destination + "/" + archive_name
-		_, err = os.Stat(archive_path)
-
-		if len(backup_paths) > 0 && !helper.FindElm(backup_paths, archive_path) {
-			continue
-		}
-
-		if os.IsNotExist(err) {
-			fmt.Println("Couldnt be restored because archive doesn't exist.")
-			continue
-		}
-
-		args := []string{"x", archive_path, "-y", "-o" + source}
-
-		cmd := exec.Command(path7z, args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			fmt.Println(err.Error())
-			//return err
-		}
-
-		break
-	}
 }
 
-func BackupFileDir(source_id int64) int {
-	var backup_rels = db.FindBackups(source_id)
+func BackupFileDir(source_ids []int64) int {
 
-	destinations, source, archive_name, backup_ksuids := TransformBackups(backup_rels)
+	for _, source_id := range source_ids {
+		var backup_rels = db.FindBackups(source_id)
 
-	_, err := os.Stat(source)
+		destinations, source, archive_name, backup_ksuids := TransformBackups(backup_rels)
 
-	if os.IsNotExist(err) {
-		fmt.Println("Source file does not exist.")
-		return 0
-	}
-
-	fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
-
-	cmd7zExists := helper.CommandAvailable("7z")
-	path7z := "7z"
-
-	if !cmd7zExists {
-		_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+		_, err := os.Stat(source)
 
 		if os.IsNotExist(err) {
-			fmt.Println("7z executable isnt accesible.")
+			fmt.Println("Source file or directory do not exist.")
 			return 0
 		}
 
-		path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
-	}
+		fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
 
-	for _, destination := range destinations {
-		var args []string
-		archive_exists := helper.Exists(destination + "/" + archive_name)
+		cmd7zExists := helper.CommandAvailable("7z")
+		path7z := "7z"
 
-		fmt.Println(archive_exists)
+		if !cmd7zExists {
+			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
 
-		if archive_exists == nil {
-			args = []string{"u", destination + "/" + archive_name, source + "/*"}
-		} else {
-			args = []string{"a", "-t7z", destination + "/" + archive_name, source + "/*"}
+			if os.IsNotExist(err) {
+				fmt.Println("7z executable isnt accesible.")
+				return 0
+			}
+
+			path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
 		}
 
-		cmd := exec.Command(path7z, args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
-			fmt.Println(err.Error())
-			continue
-		}
-	}
+		for _, destination := range destinations {
+			var args []string
+			archive_exists := helper.Exists(destination + "/" + archive_name)
 
-	for _, ksuid := range backup_ksuids {
-		db.AddBackupTimestamp(source_id, ksuid)
+			fmt.Println(archive_exists)
+
+			if archive_exists == nil {
+				args = []string{"u", destination + "/" + archive_name, source}
+			} else {
+				args = []string{"a", "-t7z", destination + "/" + archive_name, source}
+			}
+
+			cmd := exec.Command(path7z, args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
+		}
+
+		for _, ksuid := range backup_ksuids {
+			db.AddBackupTimestamp(source_id, ksuid)
+		}
 	}
 
 	return 1

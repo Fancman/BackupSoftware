@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	//"strconv"
@@ -22,6 +21,7 @@ var (
 	//source_path       string
 	source_paths []string
 	backup_paths []string
+	source_ids   []int64
 
 	archive_name   string
 	listBackupsCmd = &cobra.Command{
@@ -97,21 +97,15 @@ var (
 	}
 
 	startBackupCmd = &cobra.Command{
-		Use:   "start-backup [source id]",
+		Use:   "start-backup -s [source ids]",
 		Short: "Start backup from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) != 1 {
-				return errors.New("you have to enter exactly one drive indetification")
+			if len(source_ids) == 0 {
+				return errors.New("requires atleast one source path")
 			}
 
-			i, err := strconv.ParseInt(args[0], 10, 64)
-
-			if err != nil {
-				return errors.New("entered backup id have to be an integer type")
-			}
-
-			BackupFileDir(i)
+			BackupFileDir(source_ids)
 
 			//backup := find_backup(db, i)
 			//start_backup(backup.id, backup.source, backup.destinations)
@@ -121,21 +115,15 @@ var (
 	}
 
 	startRestoreCmd = &cobra.Command{
-		Use:   "start-restore [source id] -b [backup paths]",
+		Use:   "start-restore -s [source ids] -b [backup paths]",
 		Short: "Start restore from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) != 1 {
-				return errors.New("you have to enter exactly one drive indetification")
+			if len(source_ids) == 0 {
+				return errors.New("requires atleast one source path")
 			}
 
-			i, err := strconv.ParseInt(args[0], 10, 64)
-
-			if err != nil {
-				return errors.New("entered backup id have to be an integer type")
-			}
-
-			RestoreFileDir(i, backup_paths)
+			RestoreFileDir(source_ids, backup_paths)
 
 			//backup := find_backup(db, i)
 			//start_restore(backup.id, backup.source, backup.destinations)
@@ -300,6 +288,10 @@ func init() {
 	createBackupCmd.MarkFlagRequired("source")
 	createBackupCmd.MarkFlagRequired("destination")
 
+	startBackupCmd.Flags().Int64SliceVarP(&source_ids, "source", "s", make([]int64, 0), "source ids")
+
+	//p *[]int64, name, shorthand string, value []int64, usage string
+	startRestoreCmd.Flags().Int64SliceVarP(&source_ids, "source", "s", make([]int64, 0), "source ids")
 	startRestoreCmd.Flags().StringArrayVarP(&backup_paths, "backup", "b", make([]string, 0), "backup paths")
 
 	//BackupFileDir(10)
