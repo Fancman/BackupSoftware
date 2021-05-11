@@ -51,8 +51,6 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 		}
 	}
 
-	//fmt.Println("Archive id: " + strconv.FormatInt(archive_id, 10))
-
 	for _, source_path := range source_paths {
 		if helper.Exists(source_path) == nil {
 
@@ -96,8 +94,6 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 			}
 		}
 	}
-
-	//fmt.Println("Files or directories dont exist.")
 
 	return nil
 }
@@ -612,6 +608,8 @@ func RemoveDestination(archive_id int64, drive_ksuid string) int {
 }
 
 func RemoveDestinationByPath(destination_path string) {
+	destination_path = helper.CleanPath(destination_path)
+
 	dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
 	dest_drive_ksuid := AddDrive(dest_letter, "")
 
