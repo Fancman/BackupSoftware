@@ -14,20 +14,13 @@ import (
 
 var (
 	// Used for flags.
-	db                = &database.SQLite{}
-	source            string
-	dest_drive_ksuid  string
-	dest_drive_letter string
-	//dest_path         string
+	db = &database.SQLite{}
+
 	//source_path       string
 	source_paths []string
 	backup_paths []string
-	backup_path  string
-	archive_name string
-	archive_id   int64
-	drive_ksuid  string
-	source_id    int64
 
+	archive_name   string
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
 		Short: "List stored backup records.",
@@ -77,11 +70,11 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 1 {
-				return errors.New("You have to enter exactly one drive identification.")
+				return errors.New("you have to enter exactly one drive identification")
 			}
 
 			if (args[0] < "a" || args[0] > "z") && (args[0] < "A" || args[0] > "Z") {
-				return errors.New("Typed argument is not an alphabetic letter.")
+				return errors.New("typed argument is not an alphabetic letter")
 			}
 
 			drive_name, err := cmd.Flags().GetString("drive-name")
@@ -106,13 +99,13 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 1 {
-				return errors.New("You have to enter exactly one drive indetification.")
+				return errors.New("you have to enter exactly one drive indetification")
 			}
 
 			i, err := strconv.ParseInt(args[0], 10, 64)
 
 			if err != nil {
-				return errors.New("Entered backup id have to be an integer type")
+				return errors.New("entered backup id have to be an integer type")
 			}
 
 			BackupFileDir(i)
@@ -130,13 +123,13 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) != 1 {
-				return errors.New("You have to enter exactly one drive indetification.")
+				return errors.New("you have to enter exactly one drive indetification")
 			}
 
 			i, err := strconv.ParseInt(args[0], 10, 64)
 
 			if err != nil {
-				return errors.New("Entered backup id have to be an integer type")
+				return errors.New("entered backup id have to be an integer type")
 			}
 
 			RestoreFileDir(i, backup_paths)
@@ -164,11 +157,11 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//fmt.Println(source_paths)
 			if len(source_paths) == 0 {
-				return errors.New("Requires atleast one source path.")
+				return errors.New("requires atleast one source path")
 			}
 
 			if len(backup_paths) == 0 {
-				return errors.New("Requires atleast one destination path.")
+				return errors.New("requires atleast one destination path")
 			}
 
 			CreateSourceBackup(source_paths, backup_paths, archive_name)
