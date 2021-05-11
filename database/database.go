@@ -357,17 +357,39 @@ func (conn *SQLite) CreateSource(drive_ksuid string, path string) int64 {
 		return 0
 	}
 
-	id, err = result.LastInsertId()
+	id, _ = result.LastInsertId()
 
 	return id
 }
 
-func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) bool {
+func (conn *SQLite) ClearAllTables() error {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return false
+		return err
+	}
+
+	tables := []string{"backup", "source", "archive", "drive", "timestamp"}
+
+	for _, table := range tables {
+		_, err = conn.db.Exec(`DELETE FROM ` + table)
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path string) error {
+
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return err
 	}
 
 	stmt := `SELECT archive_id, drive_ksuid FROM backup WHERE archive_id = ? AND drive_ksuid = ? AND path = ?`
@@ -376,35 +398,33 @@ func (conn *SQLite) CreateBackup(archive_id int64, drive_ksuid string, path stri
 	err = row.Scan(&archive_id, &drive_ksuid)
 
 	if err == nil {
-		return true
+		return err
 	}
 
 	_, err = conn.Exec(`INSERT INTO backup(archive_id, drive_ksuid, path) VALUES (?, ?, ?)`, archive_id, drive_ksuid, path)
 
 	if err == nil {
-		return true
+		return err
 	}
 
-	return false
+	return nil
 }
 
-func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) int64 {
+func (conn *SQLite) UpdateSourceArchive(source_id int64, archive_id int64) error {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return 0
+		return err
 	}
 
-	result, err := conn.Exec(`UPDATE source SET archive_id = ? where id = ?`, archive_id, source_id)
+	_, err = conn.Exec(`UPDATE source SET archive_id = ? where id = ?`, archive_id, source_id)
 
 	if err != nil {
-		return 0
+		return err
 	}
 
-	id, err := result.LastInsertId()
-
-	return id
+	return nil
 }
 
 func (conn *SQLite) UpdateDriveName(drive_ksuid string, new_name string) int {

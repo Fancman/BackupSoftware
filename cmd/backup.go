@@ -20,88 +20,84 @@ import (
 
 // Creates records for source-backup relation
 // Archive name is optional
-func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) {
+func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) error {
 	fmt.Println("Sources: " + strings.Join(source_paths, ", "))
 	fmt.Println("Backups: " + strings.Join(backup_paths, ", "))
 
-	//fmt.Println("-----------------------------------------------------------------------")
+	archive_ext := path.Ext(archive_name)
+	archive_name = helper.FileNameWithoutExtension(archive_name)
+	default_archive_name := "backup-" + strconv.FormatInt(time.Now().Unix(), 10)
+
+	if archive_name == "" {
+		archive_name = default_archive_name
+	}
+
+	if archive_ext == "" {
+		archive_ext = ".7z"
+	}
+
+	archive_id, err := db.CreateArchive(archive_name + archive_ext)
+
+	if err != nil {
+		fmt.Println(err)
+
+		archive_id, err = db.CreateArchive(default_archive_name + archive_ext)
+
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+	}
+
+	fmt.Println("Archive id: " + strconv.FormatInt(archive_id, 10))
 
 	for _, source_path := range source_paths {
-		for _, backup_path := range backup_paths {
+		if helper.Exists(source_path) == nil {
 
-			//fmt.Println(source_path + " - " + backup_path)
+			source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
+			source_drive_ksuid := AddDrive(source_letter, "")
 
-			if helper.Exists(source_path) == nil && helper.Exists(backup_path) == nil {
-				source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
-				backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+			if source_drive_ksuid != "" {
+				source_path := helper.RemoveDriveLetter(source_path)
+				source_id := db.CreateSource(source_drive_ksuid, source_path)
 
-				source_drive_ksuid := AddDrive(source_letter, "")
-				backup_drive_ksuid := AddDrive(backup_letter, "")
-
-				if source_drive_ksuid != "" && backup_drive_ksuid != "" {
-					source_path := helper.RemoveDriveLetter(source_path)
-					backup_path := helper.RemoveDriveLetter(backup_path)
-
-					source_id := db.CreateSource(source_drive_ksuid, source_path)
-
-					if source_id == 0 {
-						continue
-					}
-
-					archive_ext := path.Ext(archive_name)
-					archive_name := helper.FileNameWithoutExtension(archive_name)
-					default_archive_name := "backup-" + strconv.FormatInt(source_id, 10)
-
-					if archive_name == "" {
-						archive_name = default_archive_name
-					}
-
-					if archive_ext == "" {
-						archive_ext = ".7z"
-					}
-
-					archive_id, err := db.CreateArchive(archive_name + archive_ext)
-
-					if err != nil {
-						fmt.Println(err)
-
-						if archive_id == 0 {
-							continue
-						}
-
-						archive_id, err = db.CreateArchive(default_archive_name + archive_ext)
-
-						if err != nil {
-							fmt.Println(err)
-							continue
-						}
-					}
-
-					res := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
-
-					if !res {
-						continue
-					}
-
-					archive_id = db.UpdateSourceArchive(source_id, archive_id)
-
-					if archive_id == 0 {
-						continue
-					}
-
-					// Vymazat vytvorene zaznamy pred continue ak sa vrati 0
+				if source_id == 0 {
+					continue
 				}
 
-				//fmt.Println("Drives couldnt be added to DB.")
+				err = db.UpdateSourceArchive(source_id, archive_id)
 
-				//return 0
+				if err == nil {
+					continue
+				}
+				// Vymazat vytvorene zaznamy pred continue ak sa vrati 0
+			}
+		}
+
+	}
+
+	for _, backup_path := range backup_paths {
+
+		if helper.Exists(backup_path) == nil {
+			backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+
+			backup_drive_ksuid := AddDrive(backup_letter, "")
+
+			if backup_drive_ksuid != "" {
+				backup_path := helper.RemoveDriveLetter(backup_path)
+
+				err := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
+
+				if err != nil {
+					continue
+				}
 			}
 		}
 	}
 
 	//fmt.Println("Files or directories dont exist.")
 
-	//return 0
+	return nil
 }
 
 func ListBackups() {
@@ -429,7 +425,7 @@ func ListDrives() {
 		drive_record.Ksuid = helper.GetKsuidFromDrive(drive_letter)
 
 		if drive_record.Ksuid == "" {
-			fmt.Println(drive_letter + " - .drive file isn't accesible.")
+			fmt.Println(drive_letter + " - .drive file is not accesible.")
 			drive_records = append(drive_records, drive_record)
 			continue
 		}

@@ -59,6 +59,17 @@ var (
 		},
 	}
 
+	ClearAllTablesCmd = &cobra.Command{
+		Use:   "clear-tables",
+		Short: "Deletes all records from tables.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			db.ClearAllTables()
+
+			return nil
+		},
+	}
+
 	addDriveCmd = &cobra.Command{
 		Use:   "add-drive [drive letter] -n [Custom drive name]",
 		Short: "Add drive to db with optional custom name and create .drive file",
@@ -262,6 +273,7 @@ func init() {
 	rootCmd.AddCommand(removeDestinationCmd)
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(startRestoreCmd)
+	rootCmd.AddCommand(ClearAllTablesCmd)
 
 	addDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 
