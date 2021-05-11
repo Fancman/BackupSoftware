@@ -193,8 +193,8 @@ var (
 	}
 
 	removeDestinationCmd = &cobra.Command{
-		Use:   "remove-destination -a [archive id] -d [drive ksuid]",
-		Short: "remove-destination -a [archive id] -d [drive ksuid]",
+		Use:   "remove-backup -a [archive id] -d [drive ksuid]",
+		Short: "remove-backup -a [archive id] -d [drive ksuid]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			archive_id, err_1 := cmd.Flags().GetInt64("archive-id")

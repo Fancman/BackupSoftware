@@ -218,7 +218,7 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
 
 			if os.IsNotExist(err) {
-				fmt.Println("7z executable isnt accesible.")
+				fmt.Println("7z executable is not accesible.")
 			}
 
 			path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
@@ -243,14 +243,20 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 
 			source_parts := strings.Split(source, `\`)
 
-			for i := len(source_parts) - 1; i >= 0; i-- {
-				if source_parts[i] != "" {
-					if !removed {
-						removed = true
-					} else {
-						output_path = source_parts[i] + `\` + output_path
+			if len(source_parts) > 1 {
+				for i := len(source_parts) - 1; i >= 0; i-- {
+					if source_parts[i] != "" {
+						if !removed {
+							removed = true
+						} else {
+							output_path = source_parts[i] + `\` + output_path
+						}
 					}
 				}
+			}
+
+			if len(output_path) == 0 {
+				output_path = `\`
 			}
 
 			args := []string{"x", archive_path, "-y", "-o" + output_path, filepath.Base(source)}
