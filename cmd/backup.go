@@ -372,7 +372,7 @@ func BackupDatabase() {
 	var database_path = helper.GetDatabaseFile()
 	var drives = helper.GetDrives()
 	var timestamp_records = db.TestDatabase(database_path)
-	var timestamp_drives = [][]database.Timestamp{}
+	//var timestamp_drives = [][]database.Timestamp{}
 	var timestamp_map = map[string]map[int64]database.Timestamp{}
 
 	//print(old_timestamp.Time.String())
@@ -416,27 +416,35 @@ func BackupDatabase() {
 		}
 	}
 
+	// Local timestamp table has no records &&
+	//  other drives have records in timestamp table
 	if len(timestamp_records) == 0 && len(timestamp_map) > 0 {
 		var newest_timestamp_records = map[int64]database.Timestamp{}
 		var newest_drive_letter = ""
 
+		// iterate throught drives timestamp tables
 		for drive_letter, test_timestamp_records := range timestamp_map {
+			// set first drive timestamp records as newest
 			if newest_drive_letter == "" {
 				newest_drive_letter = drive_letter
 				newest_timestamp_records = test_timestamp_records
 				continue
 			}
-
+			// comparing archived_at timestamps
 			for source_id, timestamp := range test_timestamp_records {
 				var timestamp_row, ok = newest_timestamp_records[source_id]
 				if ok {
 					if timestamp.Archived_at.Time.After(timestamp_row.Archived_at.Time) {
 						newest_timestamp_records = test_timestamp_records
+						newest_drive_letter = drive_letter
 					}
 				}
 			}
 
 		}
+
+		// [-] Compare other tables if timestamp tables are all empty
+
 		/*var actual_timestamp = database.Timestamp{}
 
 		for _, timestamp_rec := range timestamp_drives {
