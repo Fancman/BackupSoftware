@@ -542,28 +542,42 @@ func (conn *SQLite) OpenConnection(database_path string) error {
 	return conn.db.Ping()
 }
 
-func (conn *SQLite) TestDatabase(database_path string) sql.NullTime {
+func (conn *SQLite) TestDatabase(database_path string) map[int64]Timestamp {
+	var records_map = map[int64]Timestamp{}
+
 	err := conn.OpenConnection(database_path)
 
 	if err != nil {
-		return sql.NullTime{}
+		return records_map
 	}
 
-	stmt := `SELECT drive_ksuid FROM drive
-	WHERE drive_ksuid=?`
+	stmt := `SELECT source_id, drive_ksuid, archived_at FROM timestamp`
 
-	var last_date sql.NullTime
+	rows, err := conn.QueryRows(stmt)
 
-	row := conn.db.QueryRow(stmt)
+	if err != nil {
+		return records_map
+	}
 
 	conn.db.Close()
 
-	switch err := row.Scan(&last_date); err {
-	case nil:
-		return last_date
-	default:
-		return sql.NullTime{}
+	for rows.Next() {
+		var record Timestamp
+
+		err := rows.Scan(&record.Source_id, &record.Drive_ksuid, &record.Archived_at)
+
+		if err != nil {
+			continue
+		}
+
+		records_map[record.Source_id] = record
+
+		//records = append(records, record)
 	}
+
+	rows.Close()
+
+	return records_map
 
 }
 

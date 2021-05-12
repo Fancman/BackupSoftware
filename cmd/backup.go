@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
@@ -370,10 +369,11 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 }
 
 func BackupDatabase() {
-	drives := helper.GetDrives()
 	var database_path = helper.GetDatabaseFile()
-
-	old_timestamp := db.TestDatabase(database_path)
+	var drives = helper.GetDrives()
+	var timestamp_records = db.TestDatabase(database_path)
+	var timestamp_drives = [][]database.Timestamp{}
+	var timestamp_map = map[string]map[int64]database.Timestamp{}
 
 	//print(old_timestamp.Time.String())
 
@@ -382,9 +382,9 @@ func BackupDatabase() {
 
 			if helper.Exists(drive_letter+":/.drive") == nil {
 				// ak ma .drive subor a nie je zapisane v db
-				_, err := helper.ReadFileLines(drive_letter + ":/.drive")
+				ksuid := helper.GetKsuidFromDrive(drive_letter)
 
-				if err != nil {
+				if ksuid != "" {
 					continue
 				}
 
@@ -395,23 +395,56 @@ func BackupDatabase() {
 					continue
 				}
 
-				new_timestamp := db.TestDatabase(drive_db_path)
+				if helper.Exists(drive_db_path) == nil && helper.Exists(database_path) != nil {
+					timestamp_map[drive_letter] = db.TestDatabase(drive_db_path)
+					//timestamp_drives = append(timestamp_drives, db.TestDatabase(drive_db_path))
+				}
 
 				//print(new_timestamp.Time.String())
 
-				if (new_timestamp == sql.NullTime{} && old_timestamp == sql.NullTime{}) {
-					// Ziadne operacie
-				}
+				// Ziadne operacie
+				//if (new_timestamp == sql.NullTime{} && old_timestamp == sql.NullTime{}) {}
 
-				if new_timestamp.Time.After(old_timestamp.Time) {
+				/*if new_timestamp.Time.After(old_timestamp.Time) {
 					helper.CopyFile(drive_db_path, database_path)
 					break
-				}
+				}*/
 				/*Pozriet na disky ci maju databazu ak hej tak precitat tabulku timestamps
 				a porovnat ze ktore maju novsie zaznamy ak je lokalna novsia tak skopirovat */
 
 			}
 		}
+	}
+
+	if len(timestamp_records) == 0 && len(timestamp_map) > 0 {
+		var newest_timestamp_records = map[int64]database.Timestamp{}
+		var newest_drive_letter = ""
+
+		for drive_letter, test_timestamp_records := range timestamp_map {
+			if newest_drive_letter == "" {
+				newest_drive_letter = drive_letter
+				newest_timestamp_records = test_timestamp_records
+				continue
+			}
+
+			for source_id, timestamp := range test_timestamp_records {
+				var timestamp_row, ok = newest_timestamp_records[source_id]
+				if ok {
+					if timestamp.Archived_at.Time.After(timestamp_row.Archived_at.Time) {
+						newest_timestamp_records = test_timestamp_records
+					}
+				}
+			}
+
+		}
+		/*var actual_timestamp = database.Timestamp{}
+
+		for _, timestamp_rec := range timestamp_drives {
+
+			if actual_timestamp == (database.Timestamp{}) {
+				actual_timestamp = timestamp_rec
+			}
+		}*/
 	}
 
 }

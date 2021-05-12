@@ -25,6 +25,12 @@ type BackupRel struct {
 	Archived_at sql.NullTime
 }
 
+type Timestamp struct {
+	Source_id   int64
+	Drive_ksuid string
+	Archived_at sql.NullTime
+}
+
 type DriveRecord struct {
 	Letter            string
 	Name              string
