@@ -28,7 +28,8 @@ func (conn *SQLite) QueryRows(sql string, args ...interface{}) (rows.Rows, error
 	stmt, err := conn.db.Prepare(sql)
 
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
+		return nil, err
 	}
 
 	defer stmt.Close()
@@ -36,7 +37,7 @@ func (conn *SQLite) QueryRows(sql string, args ...interface{}) (rows.Rows, error
 	rows, err := stmt.Query(args...)
 
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return rows, err
 	}
 
@@ -187,6 +188,24 @@ func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int 
 	}
 
 	return 1
+}
+
+func (conn *SQLite) GetNewestTimestamp(database_path string) sql.NullTime {
+	err := conn.OpenConnection(database_path)
+
+	if err != nil {
+		return sql.NullTime{}
+	}
+
+	var newest_timestamp = sql.NullTime{}
+
+	stmt := `SELECT archived_at FROM timestamp ORDER BY archived_at DESC`
+
+	row := conn.db.QueryRow(stmt)
+
+	_ = row.Scan(&newest_timestamp)
+
+	return newest_timestamp
 }
 
 func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
@@ -527,12 +546,7 @@ func (conn *SQLite) Fixtures() error {
 }
 
 func (conn *SQLite) OpenConnection(database_path string) error {
-	err := CreateDB()
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	var err error
 	conn.db, err = sql.Open("sqlite3", database_path) // Open the created SQLite File
 
 	if err != nil {
@@ -544,6 +558,10 @@ func (conn *SQLite) OpenConnection(database_path string) error {
 
 func (conn *SQLite) TestDatabase(database_path string) map[int64]Timestamp {
 	var records_map = map[int64]Timestamp{}
+
+	if helper.Exists(database_path) != nil {
+		return records_map
+	}
 
 	err := conn.OpenConnection(database_path)
 

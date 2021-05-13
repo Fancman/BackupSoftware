@@ -328,7 +328,12 @@ func BackupFileDir(source_ids []int64) int {
 		}
 
 		for _, ksuid := range backup_ksuids {
+			drive_letter := Ksuid2Drive(ksuid)
 			db.AddBackupTimestamp(source_id, ksuid)
+			// Copy local database file on drive which we used as backup
+			if drive_letter != "" {
+				SpreadDatabase(drive_letter)
+			}
 		}
 	}
 
@@ -368,53 +373,90 @@ func CreateDiskIdentityFile(drive_letter string, ksuid string) bool {
 	return true
 }
 
-func BackupDatabase() {
+func SpreadDatabase(drive_letter string) int {
 	var database_path = helper.GetDatabaseFile()
-	var drives = helper.GetDrives()
-	var timestamp_records = db.TestDatabase(database_path)
-	//var timestamp_drives = [][]database.Timestamp{}
-	var timestamp_map = map[string]map[int64]database.Timestamp{}
+	var drive_db_path = drive_letter + ":/sqlite-database.db"
+	var ksuid = helper.GetKsuidFromDrive(drive_letter)
 
-	//print(old_timestamp.Time.String())
+	if ksuid == "" {
+		return 0
+	}
+
+	if helper.Exists(database_path) == nil {
+		helper.CopyFile(database_path, drive_db_path)
+	}
+
+	return 1
+}
+
+func LoadDBFromDrive() {
+
+}
+
+func ListDrivesWithDB() []string {
+	var drives = helper.GetDrives()
+	var drives_db = []string{}
 
 	if len(drives) > 0 {
 		for _, drive_letter := range drives {
 
 			if helper.Exists(drive_letter+":/.drive") == nil {
-				// ak ma .drive subor a nie je zapisane v db
 				ksuid := helper.GetKsuidFromDrive(drive_letter)
 
-				if ksuid != "" {
+				if ksuid == "" {
+					continue
+				}
+
+				drive_db_path := drive_letter + ":/sqlite-database.db"
+
+				fmt.Println(db.GetNewestTimestamp(drive_db_path))
+
+				if helper.Exists(drive_db_path) == nil {
+					drives_db = append(drives_db, drive_letter)
+				}
+
+			}
+		}
+	}
+
+	return drives_db
+}
+
+func BackupDatabase() int {
+	var database_path = helper.GetDatabaseFile()
+	var drives = helper.GetDrives()
+	var timestamp_map = map[string]map[int64]database.Timestamp{}
+
+	// Iterate available drives and if they have
+	// .drive file and not database file then copy it onto them
+	// If Local database does not exist collect records from timestamp
+	// tables located on drives.
+	if len(drives) > 0 {
+		for _, drive_letter := range drives {
+
+			if helper.Exists(drive_letter+":/.drive") == nil {
+				ksuid := helper.GetKsuidFromDrive(drive_letter)
+
+				if ksuid == "" {
 					continue
 				}
 
 				drive_db_path := drive_letter + ":/sqlite-database.db"
 
 				if helper.Exists(drive_db_path) != nil && helper.Exists(database_path) == nil {
-					helper.CopyFile(database_path, drive_db_path)
+					SpreadDatabase(drive_letter)
 					continue
 				}
 
 				if helper.Exists(drive_db_path) == nil && helper.Exists(database_path) != nil {
 					timestamp_map[drive_letter] = db.TestDatabase(drive_db_path)
-					//timestamp_drives = append(timestamp_drives, db.TestDatabase(drive_db_path))
 				}
-
-				//print(new_timestamp.Time.String())
-
-				// Ziadne operacie
-				//if (new_timestamp == sql.NullTime{} && old_timestamp == sql.NullTime{}) {}
-
-				/*if new_timestamp.Time.After(old_timestamp.Time) {
-					helper.CopyFile(drive_db_path, database_path)
-					break
-				}*/
-				/*Pozriet na disky ci maju databazu ak hej tak precitat tabulku timestamps
-				a porovnat ze ktore maju novsie zaznamy ak je lokalna novsia tak skopirovat */
 
 			}
 		}
 	}
+
+	var timestamp_records = db.TestDatabase(database_path)
 
 	// Local timestamp table has no records &&
 	//  other drives have records in timestamp table
@@ -443,18 +485,26 @@ func BackupDatabase() {
 
 		}
 
-		// [-] Compare other tables if timestamp tables are all empty
+		// Copy database file from drive with newest timestamp records.
+		if newest_drive_letter != "" {
+			helper.CopyFile(newest_drive_letter+":/sqlite-database.db", database_path)
+			return 1
+		}
 
-		/*var actual_timestamp = database.Timestamp{}
-
-		for _, timestamp_rec := range timestamp_drives {
-
-			if actual_timestamp == (database.Timestamp{}) {
-				actual_timestamp = timestamp_rec
-			}
-		}*/
 	}
 
+	// Create new database file if there wasnt any on other drives
+	if len(timestamp_records) == 0 && len(timestamp_map) == 0 {
+		err := database.CreateDB()
+
+		fmt.Println("CREATED NEW DB FILE")
+
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	return 1
 }
 
 func NewDriveRecord(drive_letter string) database.DriveRecord {

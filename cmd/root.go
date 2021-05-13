@@ -254,6 +254,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
+	ListDrivesWithDB()
 	BackupDatabase()
 	err := db.Fixtures()
 
