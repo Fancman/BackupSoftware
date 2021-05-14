@@ -42,22 +42,6 @@
     - FK drive
     - datetime (INTEGER is probably most efficient)
 
-* [x] TODO Can't distinguish destination in list-backups
-  Suppose I have created two backups with same source but different destinations:
-  #+begin_example
-Source id: 1 - D:\Sources\base16\ [F:\test\P:\test\] - Archive name: base16.7z
-Source id: 2 - D:\Sources\base16\ [F:\test\P:\test\] - Archive name: base16.7z
-  #+end_example
-  Which one is which?
-
-  This is probably caused by =create-backup= not checking whether source already
-  exists (there's a duplicate row in =source= table).
-* [x] TODO Fix UNIQUE constraint failed after update
-  Error reads out:
-  : UNIQUE constraint failed: timestamp.source_id, timestamp.drive_ksuid
-  It happens after update (start-backup). Probably related to the previous TODO.
-* [x] TODO Allow user to enter multiple sources in create-backup
-* [x] TODO Allow user to enter multiple destinations in create-backup
 * TODO Allow user to choose just one destination/or all of them
   when starting the backup or updating archive.
 * TODO Allow user to add or remove sources/destinations in backup
@@ -69,6 +53,55 @@ Source id: 2 - D:\Sources\base16\ [F:\test\P:\test\] - Archive name: base16.7z
   Now it's always executing /add/ operation when creating or updating the
   archive. When the archive already exists, it should run the /update/
   operation.
+
+* TODO Use just one process when archiving multiple sources
+  Don't start a separate process for each source.
+* TODO Allow user to choose archive to backup based on the archive
+  Not just based on sources.
+* TODO =remove-source= doesn't seem to work
+* TODO Fix =remove-backup=
+  =remove-backup= doesn't seem to delete the archive from the database. See also
+  next TODO.
+* TODO Error on =list-backups=
+  There is an archive defined, but backups haven't been executed yet. Probably
+  related to the previous TODO (occured after trying to create an archive with
+  the same name that was previously "removed").
+  #+begin_example
+{0001-01-01 00:00:00 +0000 UTC false}
+{2021-05-14 13:36:01 +0000 UTC true}
+{0001-01-01 00:00:00 +0000 UTC false}
+sql: Scan error on column index 0, name "source_id": converting NULL to int64 is unsupported
+sql: Scan error on column index 0, name "source_id": converting NULL to int64 is unsupported
++-----------+---------------+-------------+--------------+---------+-------------+
+| SOURCE ID | SOURCE DRIVE  | SOURCE PATH | DESTINATIONS | ARCHIVE | ARCHIVED AT |
++-----------+---------------+-------------+--------------+---------+-------------+
+|         0 | Not accesible |             |              |         | Nil         |
++-----------+---------------+-------------+--------------+---------+-------------+
+  #+end_example
+
+  Steps to reproduce:
+
+  1) Create an archive with 2 sources and one destination.
+  2) =start-backup= on both sources
+  3) =remove-backup=
+  4) Create a new archive with exactly the same arguments
+
+  Aftermath:
+  - A new archive is created automatically (with timestamped name) -- this is
+    generally a bad idea, because it's not what the user wanted. Automatic
+    creation could be optionally configured for example.
+  - Original archive still exists and was not removed from the DB.
+  - Original sources still exist and were not removed from the DB -- they still
+    point to the original archive.
+* TODO Improve =remove-backup=
+  - If archive IDs are being used, allow user to somehow see them.
+  - Allow user to use the name of the archive.
+  - Allow user to use the drive letter.
+  - Ability to use IDs or KSUIDs can remain.
+* TODO Don't print that drive was added when it is already in DB (=add-drive=)
+  It's misleading information.
+* TODO Update =database_scheme.sql=
+  Is it still needed? Maybe it's unnecessary duplication.
 
 
 * TODO Make abstractions for other file formats
