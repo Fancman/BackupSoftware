@@ -32,11 +32,10 @@ type Timestamp struct {
 }
 
 type DriveRecord struct {
-	Letter            string
-	Name              string
-	File_exists       bool
-	File_accesible    bool
-	Ksuid             string
-	Database_exists   bool
-	Database_inserted bool
+	Letter         string
+	Name           string
+	File_exists    bool
+	File_accesible bool
+	Ksuid          string
+	Timestamp      string
 }

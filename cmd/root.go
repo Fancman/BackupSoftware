@@ -41,16 +41,6 @@ var (
 		},
 	}
 
-	listDrivesWithDBCmd = &cobra.Command{
-		Use:   "list-db",
-		Short: "List drives with .drive and database file with lastest timestamp record time.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ListDrivesWithDB()
-
-			return nil
-		},
-	}
-
 	listDrivesCmd = &cobra.Command{
 		Use:   "list-drives",
 		Short: "List available drives.",
@@ -280,7 +270,6 @@ func init() {
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(startRestoreCmd)
 	rootCmd.AddCommand(ClearAllTablesCmd)
-	rootCmd.AddCommand(listDrivesWithDBCmd)
 
 	addDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 

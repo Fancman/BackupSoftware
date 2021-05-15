@@ -393,31 +393,6 @@ func LoadDBFromDrive() {
 
 }
 
-func ListDrivesWithDB() {
-	var drives_db = GetDrivesWithDB()
-	var database_path = helper.GetDatabaseFile()
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Drive", "Newest Timestamp record"})
-
-	var local_db_timestamp = db.GetNewestTimestamp(database_path)
-
-	table.Append([]string{"active", local_db_timestamp.Time.String()})
-
-	for _, drive_letter := range drives_db {
-		var table_row []string
-		var drive_db_path = drive_letter + ":/sqlite-database.db"
-		var newest_timestamp = db.GetNewestTimestamp(drive_db_path)
-
-		table_row = append(table_row, drive_letter)
-		table_row = append(table_row, newest_timestamp.Time.String())
-
-		table.Append(table_row)
-	}
-	table.Render()
-
-}
-
 func GetDrivesWithDB() []string {
 	var drives = helper.GetDrives()
 	var drives_db = []string{}
@@ -537,11 +512,14 @@ func NewDriveRecord(drive_letter string) database.DriveRecord {
 	drive_record.File_exists = false
 	drive_record.File_accesible = false
 	drive_record.Ksuid = ""
+	drive_record.Timestamp = ""
 	return drive_record
 }
 
 // Lists drives and their statuses
 func ListDrives() {
+	var database_path = helper.GetDatabaseFile()
+	var base_db_volume = strings.ReplaceAll(filepath.VolumeName(database_path), ":", "")
 	drives := helper.GetDrives()
 
 	if len(drives) == 0 {
@@ -556,16 +534,30 @@ func ListDrives() {
 		var drive_record = NewDriveRecord(drive_letter)
 
 		if helper.Exists(drive_letter+":/.drive") != nil {
-			fmt.Println(drive_letter + " - Drive doesn't have a .drive file")
+			fmt.Println(drive_letter + " - Drive does not have a .drive file")
 			drive_records = append(drive_records, drive_record)
 			continue
+		}
+
+		if drive_letter == base_db_volume {
+			if db.GetNewestTimestamp(database_path).Valid {
+				drive_record.Timestamp = db.GetNewestTimestamp(database_path).Time.String()
+			}
+		}
+
+		if drive_record.Timestamp == "" {
+			var drive_db_path = drive_letter + ":/sqlite-database.db"
+
+			if db.GetNewestTimestamp(drive_db_path).Valid {
+				drive_record.Timestamp = db.GetNewestTimestamp(drive_db_path).Time.String()
+			}
 		}
 
 		drive_record.File_exists = true
 		drive_record.Ksuid = helper.GetKsuidFromDrive(drive_letter)
 
 		if drive_record.Ksuid == "" {
-			fmt.Println(drive_letter + " - .drive file is not accesible.")
+			fmt.Println(drive_letter + " - .drive file is not accessible.")
 			drive_records = append(drive_records, drive_record)
 			continue
 		}
@@ -579,8 +571,6 @@ func ListDrives() {
 			drive_records = append(drive_records, drive_record)
 			continue
 		}
-
-		//fmt.Println(" - Drive has .drive file but werent in drives table.")
 
 		res := db.InsertDriveDB(drive_record.Ksuid, "")
 
@@ -596,7 +586,7 @@ func ListDrives() {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid"})
+	table.SetHeader([]string{"Drive Letter", "Custom Name", ".drive exists", ".drive accesible", "Ksuid", "Latest Timestamp"})
 
 	for _, d := range drive_records {
 		var table_row []string
@@ -605,6 +595,7 @@ func ListDrives() {
 		table_row = append(table_row, strconv.FormatBool(d.File_exists))
 		table_row = append(table_row, strconv.FormatBool(d.File_accesible))
 		table_row = append(table_row, d.Ksuid)
+		table_row = append(table_row, d.Timestamp)
 
 		table.Append(table_row)
 	}
