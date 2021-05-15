@@ -8,7 +8,7 @@
     backup:destination).
   - [x] Save timestamp of last backup for each individual path on each drive (so
     that user can see when was a specific path backed up on a specific drive).
-** New model
+** [x] New model
   - use singular table naming -- shorter SQL statements and better for possible
     ORM (napr, drive, backup)
   - rename destinations to source (or something that better decsribes it)
@@ -46,7 +46,7 @@
   when starting the backup or updating archive.
 * TODO Allow user to add or remove sources/destinations in backup
   This probably needs a new command.
-* TODO Show the timestamp somewhere
+* DONE Show the timestamp somewhere
   Probably a switch for =list-backups=.
 * TODO Allow user to enter NAME for a Drive
 * TODO Implement separate update operation
@@ -112,15 +112,3 @@ sql: Scan error on column index 0, name "source_id": converting NULL to int64 is
 * TODO Write tests
   DB consistency, correctness of archived/restored files… Maybe this should be
   higher on the priority list?
-
-
--Pridanie drivu
--Vytvorenie zdroju
--Vytvorenie cielu
--Priradit zdroj k cielu
--Spustenie zalohovania
--Spustenie obnovy
-
-PS C:\DEV\BackupSoft> C:\DEV\BackupSoft\BackupSoftware.exe create-backup-test -s "C:/Users/tomas/Pictures" -d "E:/backup/test" -a "test.7z"
-Files or directories dont exist.
-PS C:\DEV\BackupSoft> C:\DEV\BackupSoft\BackupSoftware.exe create-backup-test -s "C:/Users/tomas/Pictures" -d "E:\ouch" -a "test.7z"       
