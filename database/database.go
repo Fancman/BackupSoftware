@@ -208,7 +208,34 @@ func (conn *SQLite) GetNewestTimestamp(database_path string) sql.NullTime {
 	return newest_timestamp
 }
 
-func (conn *SQLite) FindBackups(source_ids []int64) map[int64]BackupRel {
+func GenConditionSQL(source_ids []int64, archive_names []string) ([]interface{}, string) {
+	var pos int = 0
+	var sql_str string = " AND ("
+	args := make([]interface{}, len(source_ids)+len(archive_names))
+
+	for _, value := range source_ids {
+		args[pos] = value
+		sql_str += " s.id = ?"
+		if pos < len(source_ids)-1 || len(archive_names) > 0 {
+			sql_str += " OR"
+		}
+		pos++
+	}
+
+	for i, value := range archive_names {
+		args[pos+i] = value
+		sql_str += " a.name = ?"
+		if i < len(source_ids)-1 {
+			sql_str += " OR"
+		}
+	}
+
+	sql_str += ")"
+
+	return args, sql_str
+}
+
+func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[int64]BackupRel {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
@@ -249,23 +276,10 @@ func (conn *SQLite) FindBackups(source_ids []int64) map[int64]BackupRel {
 	WHERE 1=1`
 
 	var rows rows.Rows
-	if len(source_ids) != 0 {
-		sql_str += " AND ("
-		args := make([]interface{}, len(source_ids))
+	if len(source_ids) != 0 || len(archive_names) != 0 {
+		args, sql_str_conditions := GenConditionSQL(source_ids, archive_names)
 
-		fmt.Println(len(source_ids))
-
-		for i, source_id := range source_ids {
-			args[i] = int(source_id)
-			sql_str += " s.id = ?"
-			if i < len(source_ids)-1 {
-				sql_str += " OR"
-			}
-		}
-
-		sql_str += ")"
-
-		rows, err = conn.QueryRows(sql_str, args...)
+		rows, err = conn.QueryRows(sql_str+sql_str_conditions, args...)
 	} else {
 		rows, err = conn.QueryRows(sql_str)
 	}

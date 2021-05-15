@@ -19,9 +19,10 @@ var (
 	db = &database.SQLite{}
 
 	//source_path       string
-	source_paths []string
-	backup_paths []string
-	source_ids   []int64
+	source_paths  []string
+	backup_paths  []string
+	source_ids    []int64
+	archive_names []string
 
 	archive_name   string
 	listBackupsCmd = &cobra.Command{
@@ -101,11 +102,11 @@ var (
 		Short: "Start backup for record in db by its ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(source_ids) == 0 {
-				return errors.New("requires atleast one source path")
+			if len(source_ids) == 0 && len(archive_names) == 0 {
+				return errors.New("requires atleast one source id or archive name")
 			}
 
-			BackupFileDir(source_ids)
+			BackupFileDir(source_ids, archive_names)
 
 			//backup := find_backup(db, i)
 			//start_backup(backup.id, backup.source, backup.destinations)
@@ -119,11 +120,11 @@ var (
 		Short: "Start restore from record in db by its id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(source_ids) == 0 {
-				return errors.New("requires atleast one source path")
+			if len(source_ids) == 0 && len(archive_names) == 0 {
+				return errors.New("requires atleast one source id or archive name")
 			}
 
-			RestoreFileDir(source_ids, backup_paths)
+			RestoreFileDir(source_ids, archive_names, backup_paths)
 
 			//backup := find_backup(db, i)
 			//start_restore(backup.id, backup.source, backup.destinations)
@@ -254,6 +255,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
+	RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
 	//BackupFileDir([]int64{18, 19, 20})
 
 	BackupDatabase()
@@ -291,9 +293,11 @@ func init() {
 	createBackupCmd.MarkFlagRequired("destination")
 
 	startBackupCmd.Flags().Int64SliceVarP(&source_ids, "source", "s", make([]int64, 0), "source ids")
+	startBackupCmd.Flags().StringArrayVarP(&archive_names, "archive", "a", make([]string, 0), "archive name")
 
 	//p *[]int64, name, shorthand string, value []int64, usage string
 	startRestoreCmd.Flags().Int64SliceVarP(&source_ids, "source", "s", make([]int64, 0), "source ids")
+	startRestoreCmd.Flags().StringArrayVarP(&archive_names, "archive", "a", make([]string, 0), "archive name")
 	startRestoreCmd.Flags().StringArrayVarP(&backup_paths, "backup", "b", make([]string, 0), "backup paths")
 
 	//BackupFileDir(10)

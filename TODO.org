@@ -54,7 +54,7 @@
   archive. When the archive already exists, it should run the /update/
   operation.
 
-* TODO Use just one process when archiving multiple sources
+* DONE Use just one process when archiving multiple sources
   Don't start a separate process for each source.
 * TODO Allow user to choose archive to backup based on the archive
   Not just based on sources.
