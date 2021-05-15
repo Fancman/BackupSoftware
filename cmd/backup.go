@@ -393,7 +393,32 @@ func LoadDBFromDrive() {
 
 }
 
-func ListDrivesWithDB() []string {
+func ListDrivesWithDB() {
+	var drives_db = GetDrivesWithDB()
+	var database_path = helper.GetDatabaseFile()
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Drive", "Newest Timestamp record"})
+
+	var local_db_timestamp = db.GetNewestTimestamp(database_path)
+
+	table.Append([]string{"active", local_db_timestamp.Time.String()})
+
+	for _, drive_letter := range drives_db {
+		var table_row []string
+		var drive_db_path = drive_letter + ":/sqlite-database.db"
+		var newest_timestamp = db.GetNewestTimestamp(drive_db_path)
+
+		table_row = append(table_row, drive_letter)
+		table_row = append(table_row, newest_timestamp.Time.String())
+
+		table.Append(table_row)
+	}
+	table.Render()
+
+}
+
+func GetDrivesWithDB() []string {
 	var drives = helper.GetDrives()
 	var drives_db = []string{}
 
@@ -408,8 +433,6 @@ func ListDrivesWithDB() []string {
 				}
 
 				drive_db_path := drive_letter + ":/sqlite-database.db"
-
-				fmt.Println(db.GetNewestTimestamp(drive_db_path))
 
 				if helper.Exists(drive_db_path) == nil {
 					drives_db = append(drives_db, drive_letter)
