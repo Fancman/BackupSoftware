@@ -206,92 +206,80 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) map[string]datab
 }
 
 func RestoreFileDir(source_ids []int64, backup_paths []string) {
-	/*for _, source_id := range source_ids {
+	for _, source_id := range source_ids {
 		var backup_rels = db.FindBackups([]int64{source_id})
 
-		destinations, source, archive_name, _ := TransformBackups(backup_rels)
+		backup_paths := TransformBackups(backup_rels)
 
-		_, err := os.Stat(source)
+		for archive_name, backup_path := range backup_paths {
 
-		if os.IsNotExist(err) {
-			fmt.Println("File does not exist.")
-		}
+			archive_path := backup_path.Destination + "/" + archive_name
 
-		fmt.Println("Restoring [" + strings.Join(destinations, "/"+archive_name+", ") + "] to " + source)
-
-		cmd7zExists := helper.CommandAvailable("7z")
-		path7z := "7z"
-
-		if !cmd7zExists {
-			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+			_, err := os.Stat(archive_path)
 
 			if os.IsNotExist(err) {
-				fmt.Println("7z executable is not accesible.")
+				fmt.Println("Archive file does not exist.")
 			}
 
-			path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
-		}
+			cmd7zExists := helper.CommandAvailable("7z")
+			path7z := "7z"
 
-		for _, destination := range destinations {
-			var removed bool = false
-			archive_path := destination + "/" + archive_name
+			if !cmd7zExists {
+				_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
 
-			_, err = os.Stat(archive_path)
+				if os.IsNotExist(err) {
+					fmt.Println("7z executable is not accesible.")
+				}
 
-			if len(backup_paths) > 0 && !helper.FindElm(backup_paths, archive_path) {
-				continue
+				path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
 			}
 
-			if os.IsNotExist(err) {
-				fmt.Println("Couldnt be restored because archive doesn't exist.")
-				continue
-			}
+			for _, source_path := range backup_path.Sources {
+				var removed bool = false
+				var output_path string = ""
 
-			output_path := ""
+				source_parts := strings.Split(source_path, `\`)
 
-			source_parts := strings.Split(source, `\`)
-
-			if len(source_parts) > 1 {
-				for i := len(source_parts) - 1; i >= 0; i-- {
-					if source_parts[i] != "" {
-						if !removed {
-							removed = true
-						} else {
-							output_path = source_parts[i] + `\` + output_path
+				if len(source_parts) > 1 {
+					for i := len(source_parts) - 1; i >= 0; i-- {
+						if source_parts[i] != "" {
+							if !removed {
+								removed = true
+							} else {
+								output_path = source_parts[i] + `\` + output_path
+							}
 						}
 					}
 				}
+
+				if len(output_path) == 0 {
+					output_path = `\`
+				}
+
+				args := []string{"x", archive_path, "-y", "-o" + output_path, filepath.Base(source_path)}
+
+				cmd := exec.Command(path7z, args...)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println(err.Error())
+					//return err
+				}
+
 			}
 
-			if len(output_path) == 0 {
-				output_path = `\`
-			}
-
-			args := []string{"x", archive_path, "-y", "-o" + output_path, filepath.Base(source)}
-
-			cmd := exec.Command(path7z, args...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
-			if err != nil {
-				fmt.Println(err.Error())
-				//return err
-			}
-
-			break
 		}
-	}*/
+	}
 
 }
 
 func BackupFileDir(source_ids []int64) int {
 
 	var backup_rels = db.FindBackups(source_ids)
-
 	backup_paths := TransformBackups(backup_rels)
 
 	for archive_name, backup_path := range backup_paths {
-
 		for _, source := range backup_path.Sources {
 			_, err := os.Stat(source)
 
