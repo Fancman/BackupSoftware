@@ -87,11 +87,7 @@ var (
 				return err
 			}
 
-			if AddDrive(string(args[0]), drive_name) != "" {
-				fmt.Println("Drive was succesfully added.")
-			} else {
-				fmt.Println("Drive couldnt be added.")
-			}
+			AddDrive(string(args[0]), drive_name)
 
 			return nil
 		},
@@ -255,7 +251,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
-	RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
+	//RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
 	//BackupFileDir([]int64{18, 19, 20})
 
 	BackupDatabase()
