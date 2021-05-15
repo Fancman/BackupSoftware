@@ -157,14 +157,13 @@ func (conn *SQLite) RemoveDestination(archive_id int64, drive_ksuid string) bool
 	return err == nil
 }
 
-func (conn *SQLite) ArchiveUsed(archive_id int64) bool {
+func (conn *SQLite) ArchiveUsed(archive_id int64) int {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
+	var cnt int = 0
 
 	if err != nil {
-		return false
+		return cnt
 	}
-
-	var cnt int = 0
 
 	stmt := `SELECT SUM(cnt) as cnt FROM (
 		select count(*) as cnt from source s where s.archive_id = ? 
@@ -177,10 +176,9 @@ func (conn *SQLite) ArchiveUsed(archive_id int64) bool {
 
 	if err != nil {
 		fmt.Println("Cant get data from DB.")
-		return false
 	}
 
-	return cnt > 0
+	return cnt
 }
 
 func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int {

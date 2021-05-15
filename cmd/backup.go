@@ -734,8 +734,9 @@ func RemoveSource(source_id int64) int {
 
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
+	var archive_used int = db.ArchiveUsed(archive_id)
 
-	if !db.ArchiveUsed(archive_id) {
+	if archive_used == 0 {
 		res = db.DelArchiveDB(archive_id)
 		if res {
 			fmt.Println("Archive was also deleted")
@@ -743,7 +744,7 @@ func RemoveDestination(archive_id int64, drive_ksuid string) int {
 			fmt.Println("Archive couldnt be deleted.")
 		}
 	} else {
-		fmt.Println("Archive couldnt be deleted because it is used in other records.")
+		fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(archive_used) + " more records.")
 	}
 
 	if res {
