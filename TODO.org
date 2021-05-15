@@ -48,8 +48,8 @@
   This probably needs a new command.
 * DONE Show the timestamp somewhere
   Probably a switch for =list-backups=.
-* TODO Allow user to enter NAME for a Drive
-* TODO Implement separate update operation
+* DONE Allow user to enter NAME for a Drive
+* DONE Implement separate update operation
   Now it's always executing /add/ operation when creating or updating the
   archive. When the archive already exists, it should run the /update/
   operation.

@@ -102,7 +102,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 }
 
 func ListBackups() {
-	var backup_rels = db.FindBackups(0)
+	var backup_rels = db.FindBackups([]int64{})
 	var table_data [][]string
 	var destinations []string
 
@@ -162,43 +162,52 @@ func ListBackups() {
 	table.Render()
 }
 
-func TransformBackups(backup_rels map[int64]database.BackupRel) ([]string, string, string, []string) {
-	var destinations []string
-	var source string
-	var archive_name string
-	var backup_ksuids []string
+func TransformBackups(backup_rels map[int64]database.BackupRel) map[string]database.BackupPaths {
+	var backup_paths = make(map[string]database.BackupPaths)
 
 	for _, element := range backup_rels {
-		if len(source) == 0 {
-			source = Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path.String
-		}
 
-		if len(archive_name) == 0 {
-			archive_name = element.Archive.Name
-		}
+		_, ok := backup_paths[element.Archive.Name]
+
+		// backup_paths doesnt have key with archive name
+		source_path := Ksuid2Drive(element.Source.Ksuid) + ":" + element.Source.Path.String
 
 		for _, b := range element.Backup {
 			destination_ksuid := Ksuid2Drive(b.Ksuid)
 			if destination_ksuid != "" && b.Path.String != "" {
-				destination := destination_ksuid + ":" + b.Path.String
+				destination_path := destination_ksuid + ":" + b.Path.String
 
-				destinations = append(destinations, destination)
-				backup_ksuids = append(backup_ksuids, b.Ksuid)
+				if !ok {
+					backup_paths[element.Archive.Name] = database.BackupPaths{
+						Sources:     []string{source_path},
+						SourceIDs:   []int64{element.Source.Id},
+						Destination: destination_path,
+						BackupKsuid: b.Ksuid,
+					}
 
-				/*err := os.MkdirAll(destination, os.ModePerm)
-				if err != nil {
-					fmt.Println(err.Error())
-				}*/
+					continue
+				}
+
+				var backup_path = backup_paths[element.Archive.Name]
+				var sources []string = backup_paths[element.Archive.Name].Sources
+				sources = append(sources, source_path)
+				var sources_ids []int64 = backup_paths[element.Archive.Name].SourceIDs
+				sources_ids = append(sources_ids, element.Source.Id)
+				backup_path.Sources = sources
+				backup_path.SourceIDs = sources_ids
+				backup_paths[element.Archive.Name] = backup_path
 			}
 		}
 	}
 
-	return destinations, source, archive_name, backup_ksuids
+	return backup_paths
+
+	//return destinations, source, archive_name, backup_ksuids
 }
 
 func RestoreFileDir(source_ids []int64, backup_paths []string) {
-	for _, source_id := range source_ids {
-		var backup_rels = db.FindBackups(source_id)
+	/*for _, source_id := range source_ids {
+		var backup_rels = db.FindBackups([]int64{source_id})
 
 		destinations, source, archive_name, _ := TransformBackups(backup_rels)
 
@@ -271,31 +280,34 @@ func RestoreFileDir(source_ids []int64, backup_paths []string) {
 
 			break
 		}
-	}
+	}*/
 
 }
 
 func BackupFileDir(source_ids []int64) int {
 
-	for _, source_id := range source_ids {
-		var backup_rels = db.FindBackups(source_id)
+	var backup_rels = db.FindBackups(source_ids)
 
-		destinations, source, archive_name, backup_ksuids := TransformBackups(backup_rels)
+	backup_paths := TransformBackups(backup_rels)
 
-		_, err := os.Stat(source)
+	for archive_name, backup_path := range backup_paths {
 
-		if os.IsNotExist(err) {
-			fmt.Println("Source file or directory do not exist.")
-			return 0
+		for _, source := range backup_path.Sources {
+			_, err := os.Stat(source)
+
+			if os.IsNotExist(err) {
+				fmt.Println("Source file or directory do not exist.")
+				return 0
+			}
 		}
 
-		fmt.Println("Archiving " + source + " to [" + strings.Join(destinations, ", ") + "] " + archive_name)
+		fmt.Println("Archiving [" + strings.Join(backup_path.Sources, ", ") + "] to " + backup_path.Destination + `\` + archive_name)
 
 		cmd7zExists := helper.CommandAvailable("7z")
 		path7z := "7z"
 
 		if !cmd7zExists {
-			_, err = os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
+			_, err := os.Stat("7-ZipPortable/App/7-Zip64/7z.exe")
 
 			if os.IsNotExist(err) {
 				fmt.Println("7z executable isnt accesible.")
@@ -305,37 +317,53 @@ func BackupFileDir(source_ids []int64) int {
 			path7z = "7-ZipPortable/App/7-Zip64/7z.exe"
 		}
 
-		for _, destination := range destinations {
-			var args []string
-			archive_exists := helper.Exists(destination + "/" + archive_name)
+		var args []string
+		archive_exists := helper.Exists(backup_path.Destination + "/" + archive_name)
 
-			fmt.Println(archive_exists)
+		fmt.Println(archive_exists)
 
-			if archive_exists == nil {
-				args = []string{"u", destination + "/" + archive_name, source}
-			} else {
-				args = []string{"a", "-t7z", destination + "/" + archive_name, source}
-			}
-
-			cmd := exec.Command(path7z, args...)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
-			if err != nil {
-				fmt.Println(err.Error())
-				continue
-			}
+		if archive_exists == nil {
+			args = []string{"u", backup_path.Destination + "/" + archive_name}
+		} else {
+			args = []string{"a", "-t7z", backup_path.Destination + "/" + archive_name}
 		}
 
-		for _, ksuid := range backup_ksuids {
-			drive_letter := Ksuid2Drive(ksuid)
-			db.AddBackupTimestamp(source_id, ksuid)
-			// Copy local database file on drive which we used as backup
-			if drive_letter != "" {
-				SpreadDatabase(drive_letter)
-			}
+		for _, source := range backup_path.Sources {
+			args = append(args, source)
 		}
+
+		cmd := exec.Command(path7z, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+
+		drive_letter := Ksuid2Drive(backup_path.BackupKsuid)
+
+		// Add timestamp records
+		for _, source_id := range backup_path.SourceIDs {
+			db.AddBackupTimestamp(source_id, backup_path.BackupKsuid)
+		}
+
+		// Copy local database file on drive which we used as backup
+		if drive_letter != "" {
+			SpreadDatabase(drive_letter)
+		}
+
 	}
+
+	/*for _, ksuid := range backup_ksuids {
+		drive_letter := Ksuid2Drive(ksuid)
+		db.AddBackupTimestamp(source_id, ksuid)
+		// Copy local database file on drive which we used as backup
+		if drive_letter != "" {
+			SpreadDatabase(drive_letter)
+		}
+	}*/
 
 	return 1
 }

@@ -254,6 +254,8 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
+	//BackupFileDir([]int64{18, 19, 20})
+
 	BackupDatabase()
 	err := db.Fixtures()
 

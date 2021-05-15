@@ -208,9 +208,18 @@ func (conn *SQLite) GetNewestTimestamp(database_path string) sql.NullTime {
 	return newest_timestamp
 }
 
-func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
+func (conn *SQLite) FindBackups(source_ids []int64) map[int64]BackupRel {
 
 	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	var source_ksuid string
+	var source_path sql.NullString
+	var backup_ksuid string
+	var backup_path sql.NullString
+	var archive_name string
+	var archive_id int64
+	var archived_at sql.NullTime
+	var source_id int64
 
 	if err != nil {
 		fmt.Println(err)
@@ -236,12 +245,27 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	left join drive s_d ON s.drive_ksuid = s_d.drive_ksuid 
 	------------------------------------------------------
 	left join drive b_d ON b.drive_ksuid = b_d.drive_ksuid
-	left join "timestamp" t ON s.id = t.source_id and b.drive_ksuid = t.drive_ksuid `
+	left join "timestamp" t ON s.id = t.source_id and b.drive_ksuid = t.drive_ksuid 
+	WHERE 1=1`
 
 	var rows rows.Rows
-	if source_id != 0 {
-		sql_str = sql_str + ` WHERE s.id = ?`
-		rows, err = conn.QueryRows(sql_str, source_id)
+	if len(source_ids) != 0 {
+		sql_str += " AND ("
+		args := make([]interface{}, len(source_ids))
+
+		fmt.Println(len(source_ids))
+
+		for i, source_id := range source_ids {
+			args[i] = int(source_id)
+			sql_str += " s.id = ?"
+			if i < len(source_ids)-1 {
+				sql_str += " OR"
+			}
+		}
+
+		sql_str += ")"
+
+		rows, err = conn.QueryRows(sql_str, args...)
 	} else {
 		rows, err = conn.QueryRows(sql_str)
 	}
@@ -251,13 +275,6 @@ func (conn *SQLite) FindBackups(source_id int64) map[int64]BackupRel {
 	//fmt.Println(rows.Columns())
 
 	//var source_id int64
-	var source_ksuid string
-	var source_path sql.NullString
-	var backup_ksuid string
-	var backup_path sql.NullString
-	var archive_name string
-	var archive_id int64
-	var archived_at sql.NullTime
 
 	if err != nil {
 		fmt.Println(err)

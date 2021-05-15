@@ -25,6 +25,13 @@ type BackupRel struct {
 	Archived_at sql.NullTime
 }
 
+type BackupPaths struct {
+	Sources     []string
+	SourceIDs   []int64
+	Destination string
+	BackupKsuid string
+}
+
 type Timestamp struct {
 	Source_id   int64
 	Drive_ksuid string
