@@ -56,7 +56,7 @@
 
 * DONE Use just one process when archiving multiple sources
   Don't start a separate process for each source.
-* TODO Allow user to choose archive to backup based on the archive
+* DONE Allow user to choose archive to backup or restore based on the archive
   Not just based on sources.
 * TODO =remove-source= doesn't seem to work
 * TODO Fix =remove-backup=
@@ -98,9 +98,9 @@ sql: Scan error on column index 0, name "source_id": converting NULL to int64 is
   - Allow user to use the name of the archive.
   - Allow user to use the drive letter.
   - Ability to use IDs or KSUIDs can remain.
-* TODO Don't print that drive was added when it is already in DB (=add-drive=)
+* DONE Don't print that drive was added when it is already in DB (=add-drive=)
   It's misleading information.
-* TODO Update =database_scheme.sql=
+* DONE Update =database_scheme.sql=
   Is it still needed? Maybe it's unnecessary duplication.
 
 
