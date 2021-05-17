@@ -82,11 +82,7 @@ func (conn *SQLite) DelDriveDB(ksuid string) bool {
 
 	_, err = conn.db.Exec(`DELETE FROM drive WHERE drive_ksuid=?`, ksuid)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // Removes record from drives table
@@ -97,7 +93,7 @@ func (conn *SQLite) DelArchiveDB(archive_id int64) bool {
 		return false
 	}
 
-	_, err = conn.db.Exec(`DELETE FROM archive WHERE name=?`, archive_id)
+	_, err = conn.db.Exec(`DELETE FROM archive WHERE id=?`, archive_id)
 
 	return err == nil
 }
@@ -132,16 +128,58 @@ func (conn *SQLite) RemoveDestinationByPath(archive_name string, ksuid string) b
 }
 
 // Removes record from source table
-func (conn *SQLite) RemoveSource(source_id int64) bool {
+func (conn *SQLite) RemoveSource(source_id int64) error {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return false
+		return err
 	}
 
-	_, err = conn.db.Exec(`DELETE FROM source WHERE id=?`, source_id)
+	var cnt int = 0
 
-	return err == nil
+	stmt := `SELECT count(*) as cnt FROM source WHERE id = ?`
+
+	row := conn.db.QueryRow(stmt, source_id)
+
+	err = row.Scan(&cnt)
+
+	if err != nil {
+		return err
+	}
+
+	if cnt != 0 {
+		_, err = conn.db.Exec(`DELETE FROM source WHERE id=?`, source_id)
+
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Source was removed succesfuly.")
+
+		return nil
+	}
+
+	return errors.New("Source record with given name could not be found.")
+}
+
+// Removes record from source table
+func (conn *SQLite) GetSourceArchive(source_id int64) int64 {
+	var archive_id int64 = 0
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return archive_id
+	}
+
+	stmt := `SELECT archive_id FROM source WHERE id = ?`
+	row := conn.db.QueryRow(stmt, source_id)
+	err = row.Scan(&archive_id)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return archive_id
 }
 
 // Removes record from drives table
@@ -157,28 +195,56 @@ func (conn *SQLite) RemoveDestination(archive_id int64, drive_ksuid string) bool
 	return err == nil
 }
 
-func (conn *SQLite) ArchiveUsed(archive_id int64) int {
+// Removes record from source table
+func (conn *SQLite) RemoveSources(archive_id int64) bool {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
-	var cnt int = 0
 
 	if err != nil {
-		return cnt
+		return false
 	}
 
-	stmt := `SELECT SUM(cnt) as cnt FROM (
-		select count(*) as cnt from source s where s.archive_id = ? 
-		UNION 
-		select count(*) as cnt from backup b where b.archive_id = ?)`
+	_, err = conn.db.Exec(`DELETE FROM source WHERE archive_id = ?`, archive_id)
+
+	return err == nil
+}
+
+// Removes record from drives table
+func (conn *SQLite) RemoveDestinations(archive_id int64) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM backup WHERE archive_id = ?`, archive_id)
+
+	return err == nil
+}
+
+func (conn *SQLite) ArchiveUsed(archive_id int64) (int, int) {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+	var source_occur int = 0
+	var backup_occur int = 0
+
+	if err != nil {
+		return source_occur, backup_occur
+	}
+
+	stmt := `SELECT (
+		select count(*) from source s where s.archive_id = ?
+		) as source_occur, 
+		(select count(*) from backup b where b.archive_id = ?
+		) as backup_occur`
 
 	row := conn.db.QueryRow(stmt, archive_id, archive_id)
 
-	err = row.Scan(&cnt)
+	err = row.Scan(&source_occur, &backup_occur)
 
 	if err != nil {
 		fmt.Println("Cant get data from DB.")
 	}
 
-	return cnt
+	return source_occur, backup_occur
 }
 
 func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int {
@@ -375,6 +441,27 @@ func (conn *SQLite) ArchiveExists(archive_name string) bool {
 	}
 
 	return false
+}
+
+func (conn *SQLite) GetArchiveID(archive_name string) int64 {
+	var archive_id int64 = 0
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return archive_id
+	}
+
+	stmt := `SELECT id FROM archive WHERE name = ?`
+
+	row := conn.db.QueryRow(stmt, archive_id)
+
+	err = row.Scan(&archive_id)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return archive_id
 }
 
 func (conn *SQLite) CreateArchive(archive_name string) (int64, error) {

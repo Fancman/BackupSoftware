@@ -251,6 +251,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
+	//RemoveSource(19)
 	//RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
 	//BackupFileDir([]int64{18, 19, 20})
 

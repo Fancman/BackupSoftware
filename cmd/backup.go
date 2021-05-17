@@ -720,35 +720,71 @@ func AddDrive(drive_letter string, drive_name string) string {
 	return ksuid
 }
 
-func RemoveSource(source_id int64) int {
-	res := db.RemoveSource(source_id)
+func RemoveSource(source_id int64) error {
+	archive_id := db.GetSourceArchive(source_id)
 
-	if res {
-		fmt.Println("Destination was removed succesfuly.")
-		return 1
+	if archive_id > 0 {
+		RemoveUnusedArchive(archive_id, "source")
 	}
 
-	fmt.Println("Destination was not removed.")
-	return 0
+	err := db.RemoveSource(source_id)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
+	source_occur, backup_occur := db.ArchiveUsed(archive_id)
+
+	if archive_usage == "source" {
+		source_occur -= 1
+	}
+
+	if archive_usage == "destination" {
+		backup_occur -= 1
+	}
+
+	if source_occur == 0 || backup_occur == 0 {
+		if source_occur > 0 {
+			err := db.RemoveSources(archive_id)
+			if err {
+				fmt.Println("Sources without backup records were deleted.")
+			}
+		}
+
+		if backup_occur > 0 {
+			err := db.RemoveDestinations(archive_id)
+			if err {
+				fmt.Println("Backups without source records were deleted.")
+			}
+		}
+
+		res := db.DelArchiveDB(archive_id)
+
+		if res {
+			fmt.Println("Archive was deleted")
+			return true
+		}
+
+		fmt.Println("Archive couldnt be deleted.")
+		return false
+	}
+
+	fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(source_occur+backup_occur) + " more records.")
+
+	return false
 }
 
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
-	var archive_used int = db.ArchiveUsed(archive_id)
-
-	if archive_used == 0 {
-		res = db.DelArchiveDB(archive_id)
-		if res {
-			fmt.Println("Archive was also deleted")
-		} else {
-			fmt.Println("Archive couldnt be deleted.")
-		}
-	} else {
-		fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(archive_used) + " more records.")
-	}
 
 	if res {
-		fmt.Println("Destination was removed succesfuly.")
+		RemoveUnusedArchive(archive_id, "destination")
+		fmt.Println("Destination was removed successfully.")
 		return 1
 	}
 
@@ -765,7 +801,14 @@ func RemoveDestinationByPath(destination_path string) {
 	if len(dest_drive_ksuid) > 0 {
 		dest_archive_name := filepath.Base(destination_path)
 		if len(dest_archive_name) > 0 {
-			db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
+			res := db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
+
+			if res {
+				archive_id := db.GetArchiveID(archive_name)
+				if archive_id > 0 {
+					RemoveUnusedArchive(archive_id, "destination")
+				}
+			}
 		}
 	}
 }
