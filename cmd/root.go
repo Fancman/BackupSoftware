@@ -229,6 +229,16 @@ var (
 				RemoveDestinationByDrive(drive_letter)
 			}
 
+			archive_name, err := cmd.Flags().GetString("archive-name")
+
+			if err != nil {
+				return err
+			}
+
+			if drive_letter != "" {
+				RemoveDestinationByArchive(archive_name)
+			}
+
 			return nil
 		},
 	}

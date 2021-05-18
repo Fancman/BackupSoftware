@@ -208,6 +208,19 @@ func (conn *SQLite) RemoveDestinationByDrive(drive_ksuid string) bool {
 	return err == nil
 }
 
+// Removes record from drives table
+func (conn *SQLite) RemoveDestinationByArchive(archive_id int64) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM backup WHERE archive_id = ?`, archive_id)
+
+	return err == nil
+}
+
 // Removes record from source table
 func (conn *SQLite) RemoveSources(archive_id int64) bool {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
@@ -300,10 +313,16 @@ func (conn *SQLite) GetArchivesWithoutBackup() []int64 {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	if err != nil {
-		return source_ids
+		return archive_ids
 	}
 
-	stmt := `select s.id from source s left join backup b on s.archive_id = b.archive_id WHERE b.archive_id IS NULL`
+	stmt := `SELECT a.id from archive a 
+	where (
+	NOT EXISTS (select * from "source" s where s.archive_id = a.id)
+	OR 
+	NOT EXISTS (select * from "backup" b where b.archive_id = a.id)
+	)`
+
 	rows, err := conn.QueryRows(stmt)
 
 	if err != nil {
@@ -311,17 +330,17 @@ func (conn *SQLite) GetArchivesWithoutBackup() []int64 {
 	}
 
 	for rows.Next() {
-		err := rows.Scan(&source_id)
+		err := rows.Scan(&archive_id)
 
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 
-		source_ids = append(source_ids, source_id)
+		archive_ids = append(archive_ids, archive_id)
 	}
 
-	return source_ids
+	return archive_ids
 }
 
 func (conn *SQLite) GetSourcesWithoutBackup() []int64 {
@@ -447,12 +466,6 @@ func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[
 	} else {
 		rows, err = conn.QueryRows(sql_str)
 	}
-
-	//rows, err := conn.QueryRows(sql_str)
-
-	//fmt.Println(rows.Columns())
-
-	//var source_id int64
 
 	if err != nil {
 		fmt.Println(err)

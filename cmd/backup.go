@@ -803,6 +803,30 @@ func RemoveDestinationByDrive(drive_letter string) int {
 	return 0
 }
 
+func RemoveDestinationByArchive(archive_name string) int {
+	archive_id := db.GetArchiveID(archive_name)
+
+	if archive_id > 0 {
+		res := db.RemoveDestinationByArchive(archive_id)
+		if res {
+			source_ids := db.GetSourcesWithoutBackup()
+			archive_ids := db.GetArchivesWithoutBackup()
+
+			for _, source_id := range source_ids {
+				db.RemoveSource(source_id)
+			}
+
+			for _, archive_id := range archive_ids {
+				db.DelArchiveDB(archive_id)
+			}
+
+			return 1
+		}
+	}
+
+	return 0
+}
+
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
 
