@@ -17,6 +17,34 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+func AddSource(source_paths []string, archive_name string) {
+	for _, source_path := range source_paths {
+		if helper.Exists(source_path) == nil {
+
+			source_letter := strings.ReplaceAll(filepath.VolumeName(source_path), ":", "")
+			source_drive_ksuid := AddDrive(source_letter, "")
+
+			if source_drive_ksuid != "" {
+				source_path := helper.RemoveDriveLetter(source_path)
+				source_id := db.CreateSource(source_drive_ksuid, source_path)
+
+				if source_id == 0 || source_id == -1 {
+					continue
+				}
+
+				archive_id := db.GetArchiveID(archive_name)
+
+				if archive_id == 0 {
+					continue
+				}
+
+				db.UpdateSourceArchive(source_id, archive_id)
+			}
+		}
+
+	}
+}
+
 // Creates records for source-backup relation
 // Archive name is optional
 func CreateSourceBackup(source_paths []string, backup_paths []string, archive_name string) error {
@@ -326,9 +354,7 @@ func BackupFileDir(source_ids []int64, archive_names []string) int {
 			args = []string{"a", "-t7z", backup_path.Destination + "/" + archive_name}
 		}
 
-		for _, source := range backup_path.Sources {
-			args = append(args, source)
-		}
+		args = append(args, backup_path.Sources...)
 
 		cmd := exec.Command(path7z, args...)
 		cmd.Stdout = os.Stdout

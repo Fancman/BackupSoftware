@@ -243,6 +243,20 @@ var (
 		},
 	}
 
+	addSourceCmd = &cobra.Command{
+		Use:   "add-source -s [source path] -a [archive name]",
+		Short: "Add source to archive name",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(source_paths) == 0 {
+				return errors.New("requires atleast one source path")
+			}
+			if archive_name == "" {
+				return errors.New("requires archive name")
+			}
+			return nil
+		},
+	}
+
 	//insert_backups_db(source string, dest_drive_ksuid string, path string)
 
 	rootCmd = &cobra.Command{
@@ -271,7 +285,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
-	RemoveDestinationByArchive("crypto-images.7z")
+	//RemoveDestinationByArchive("crypto-images.7z")
 	//RemoveSource(19)
 	//RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
 	//BackupFileDir([]int64{18, 19, 20})
@@ -320,7 +334,8 @@ func init() {
 	startRestoreCmd.Flags().StringArrayVarP(&archive_names, "archive", "a", make([]string, 0), "archive name")
 	startRestoreCmd.Flags().StringArrayVarP(&backup_paths, "backup", "b", make([]string, 0), "backup paths")
 
-	//BackupFileDir(10)
+	addSourceCmd.Flags().StringArrayVarP(&source_paths, "source", "s", make([]string, 0), "sources paths")
+	addSourceCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
 	//RestoreFileDir(10)
 
