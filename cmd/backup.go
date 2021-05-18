@@ -790,10 +790,12 @@ func RemoveDestinationByDrive(drive_letter string) int {
 
 			for _, source_id := range source_ids {
 				db.RemoveSource(source_id)
+				fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
 			}
 
 			for _, archive_id := range archive_ids {
 				db.DelArchiveDB(archive_id)
+				fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
 			}
 
 			return 1
@@ -814,10 +816,14 @@ func RemoveDestinationByArchive(archive_name string) int {
 
 			for _, source_id := range source_ids {
 				db.RemoveSource(source_id)
+				fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
 			}
+
+			fmt.Println(strconv.Itoa(len(source_ids)) + " unused sources were deleted.")
 
 			for _, archive_id := range archive_ids {
 				db.DelArchiveDB(archive_id)
+				fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
 			}
 
 			return 1

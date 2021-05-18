@@ -539,7 +539,7 @@ func (conn *SQLite) GetArchiveID(archive_name string) int64 {
 
 	stmt := `SELECT id FROM archive WHERE name = ?`
 
-	row := conn.db.QueryRow(stmt, archive_id)
+	row := conn.db.QueryRow(stmt, archive_name)
 
 	err = row.Scan(&archive_id)
 

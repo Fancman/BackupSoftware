@@ -190,8 +190,8 @@ var (
 	}
 
 	removeDestinationCmd = &cobra.Command{
-		Use:   "remove-destination -i [archive id] -d [drive ksuid] | -p [path to destination] | -a [archive name] | -l [drive letter]",
-		Short: "remove-destination -i [archive id] -d [drive ksuid]",
+		Use:   "remove-backup -i [archive id] -d [drive ksuid] | -p [path to destination] | -a [archive name] | -l [drive letter]",
+		Short: "Remove backup records by archive_id and drive_ksuid, path to destination, archive name or drive letter",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			archive_id, err_1 := cmd.Flags().GetInt64("archive-id")
@@ -271,6 +271,7 @@ func TestRootCmd() *cobra.Command {
 }
 
 func init() {
+	RemoveDestinationByArchive("crypto-images.7z")
 	//RemoveSource(19)
 	//RestoreFileDir(source_ids, []string{"test-archiv-epic-installer-a-obrazky.7z"}, backup_paths)
 	//BackupFileDir([]int64{18, 19, 20})
