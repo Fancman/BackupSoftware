@@ -418,8 +418,8 @@ func GenConditionSQL(source_ids []int64, archive_names []string) ([]interface{},
 	return args, sql_str
 }
 
-func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[int64]BackupRel {
-
+func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) (map[int64]BackupRel, error) {
+	backup_rels := make(map[int64]BackupRel)
 	err := conn.OpenConnection(helper.GetDatabaseFile())
 
 	var source_ksuid string
@@ -432,7 +432,7 @@ func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[
 	var source_id int64
 
 	if err != nil {
-		fmt.Println(err)
+		return backup_rels, err
 	}
 
 	sql_str := `SELECT 
@@ -468,16 +468,14 @@ func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		return backup_rels, err
 	}
-
-	backup_rels := make(map[int64]BackupRel)
 
 	for rows.Next() {
 		err := rows.Scan(&source_id, &source_ksuid, &source_path, &backup_ksuid, &backup_path, &archive_id, &archive_name, &archived_at)
 
 		if err != nil {
-			fmt.Println(err)
+			return backup_rels, err
 		}
 
 		backup := Backup{Ksuid: backup_ksuid, Path: backup_path}
@@ -504,7 +502,7 @@ func (conn *SQLite) FindBackups(source_ids []int64, archive_names []string) map[
 
 	rows.Close()
 
-	return backup_rels
+	return backup_rels, nil
 }
 
 func (conn *SQLite) ArchiveExists(archive_name string) bool {

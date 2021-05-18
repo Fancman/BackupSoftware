@@ -101,10 +101,14 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 	return nil
 }
 
-func ListBackups() {
-	var backup_rels = db.FindBackups([]int64{}, []string{})
+func ListBackups() int {
+	backup_rels, err := db.FindBackups([]int64{}, []string{})
 	var table_data [][]string
 	var destinations []string
+
+	if err != nil {
+		return 0
+	}
 
 	for key, element := range backup_rels {
 		var table_row []string
@@ -160,6 +164,8 @@ func ListBackups() {
 		table.Append(v)
 	}
 	table.Render()
+
+	return 1
 }
 
 func TransformBackups(backup_rels map[int64]database.BackupRel) map[string]database.BackupPaths {
@@ -205,9 +211,13 @@ func TransformBackups(backup_rels map[int64]database.BackupRel) map[string]datab
 	//return destinations, source, archive_name, backup_ksuids
 }
 
-func RestoreFileDir(source_ids []int64, archive_names []string, backup_paths []string) {
+func RestoreFileDir(source_ids []int64, archive_names []string, backup_paths []string) int {
+	backup_rels, err := db.FindBackups(source_ids, archive_names)
 
-	var backup_rels = db.FindBackups(source_ids, archive_names)
+	if err != nil {
+		return 0
+	}
+
 	backup_paths_rel := TransformBackups(backup_rels)
 
 	for archive_name, backup_path := range backup_paths_rel {
@@ -267,12 +277,16 @@ func RestoreFileDir(source_ids []int64, archive_names []string, backup_paths []s
 
 		}
 	}
-
+	return 1
 }
 
 func BackupFileDir(source_ids []int64, archive_names []string) int {
+	backup_rels, err := db.FindBackups(source_ids, archive_names)
 
-	var backup_rels = db.FindBackups(source_ids, archive_names)
+	if err != nil {
+		return 0
+	}
+
 	backup_paths := TransformBackups(backup_rels)
 
 	for archive_name, backup_path := range backup_paths {
