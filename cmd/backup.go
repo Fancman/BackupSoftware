@@ -779,6 +779,30 @@ func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
 	return false
 }
 
+func RemoveDestinationByDrive(drive_letter string) int {
+	drive_ksuid := helper.GetKsuidFromDrive(drive_letter)
+
+	if drive_ksuid != "" {
+		res := db.RemoveDestinationByDrive(drive_ksuid)
+		if res {
+			source_ids := db.GetSourcesWithoutBackup()
+			archive_ids := db.GetArchivesWithoutBackup()
+
+			for _, source_id := range source_ids {
+				db.RemoveSource(source_id)
+			}
+
+			for _, archive_id := range archive_ids {
+				db.DelArchiveDB(archive_id)
+			}
+
+			return 1
+		}
+	}
+
+	return 0
+}
+
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
 

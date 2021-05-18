@@ -195,6 +195,19 @@ func (conn *SQLite) RemoveDestination(archive_id int64, drive_ksuid string) bool
 	return err == nil
 }
 
+// Removes record from drives table
+func (conn *SQLite) RemoveDestinationByDrive(drive_ksuid string) bool {
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return false
+	}
+
+	_, err = conn.db.Exec(`DELETE FROM backup WHERE drive_ksuid = ?`, drive_ksuid)
+
+	return err == nil
+}
+
 // Removes record from source table
 func (conn *SQLite) RemoveSources(archive_id int64) bool {
 	err := conn.OpenConnection(helper.GetDatabaseFile())
@@ -279,6 +292,66 @@ func (conn *SQLite) AddBackupTimestamp(source_id int64, drive_ksuid string) int 
 	}
 
 	return 1
+}
+
+func (conn *SQLite) GetArchivesWithoutBackup() []int64 {
+	var archive_ids = []int64{}
+	var archive_id int64
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return source_ids
+	}
+
+	stmt := `select s.id from source s left join backup b on s.archive_id = b.archive_id WHERE b.archive_id IS NULL`
+	rows, err := conn.QueryRows(stmt)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&source_id)
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		source_ids = append(source_ids, source_id)
+	}
+
+	return source_ids
+}
+
+func (conn *SQLite) GetSourcesWithoutBackup() []int64 {
+	var source_ids = []int64{}
+	var source_id int64
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return source_ids
+	}
+
+	stmt := `select s.id from source s left join backup b on s.archive_id = b.archive_id WHERE b.archive_id IS NULL`
+	rows, err := conn.QueryRows(stmt)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&source_id)
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		source_ids = append(source_ids, source_id)
+	}
+
+	return source_ids
 }
 
 func (conn *SQLite) GetNewestTimestamp(database_path string) sql.NullTime {
