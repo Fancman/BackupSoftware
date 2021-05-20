@@ -27,7 +27,7 @@ var (
 	archive_name   string
 	listBackupsCmd = &cobra.Command{
 		Use:   "list-backups",
-		Short: "List stored backup records.",
+		Short: "List stored backup records",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ListBackups()
 			/*backups := list_backups(conn)
@@ -174,7 +174,7 @@ var (
 
 	removeSourceCmd = &cobra.Command{
 		Use:   "remove-source -s [source id]",
-		Short: "remove-source -s [source id]",
+		Short: "Remove source by source ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			source_id, err := cmd.Flags().GetInt64("source-id")
@@ -188,6 +188,31 @@ var (
 			}
 
 			RemoveSource(source_id)
+
+			return nil
+		},
+	}
+
+	loadDBFromDriveCmd = &cobra.Command{
+		Use:   "load-db -d [drive letter]",
+		Short: "Load database from drive",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			drive_letter, err := cmd.Flags().GetString("drive-letter")
+
+			if err != nil {
+				return err
+			}
+
+			if (drive_letter < "a" || drive_letter > "z") && (drive_letter < "A" || drive_letter > "Z") {
+				return errors.New("typed drive letter is not an alphabetic letter")
+			}
+
+			err = LoadDBFromDrive(drive_letter)
+
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},
@@ -342,6 +367,7 @@ func init() {
 	addSourceCmd.Flags().StringArrayVarP(&source_paths, "source", "s", make([]string, 0), "sources paths")
 	addSourceCmd.Flags().StringVarP(&archive_name, "archive", "a", "", "archive name")
 
+	loadDBFromDriveCmd.Flags().StringP("drive-letter", "l", "", "Drive letter")
 	//RestoreFileDir(10)
 
 	/*createBackupCmd.Flags().StringVarP(&source, "source", "s", "", "source path")

@@ -441,8 +441,24 @@ func SpreadDatabase(drive_letter string) int {
 	return 1
 }
 
-func LoadDBFromDrive() {
+func LoadDBFromDrive(drive_letter string) error {
+	var database_path = helper.GetDatabaseFile()
+	var source_path = drive_letter + ":/sqlite-database.db"
+	err := helper.Exists(source_path)
 
+	if err != nil {
+		return err
+	}
+
+	err = helper.CopyFile(source_path, database_path)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("New database was copied on place where local database should be")
+
+	return nil
 }
 
 func GetDrivesWithDB() []string {
