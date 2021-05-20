@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -444,7 +445,12 @@ func SpreadDatabase(drive_letter string) int {
 func LoadDBFromDrive(drive_letter string) error {
 	var database_path = helper.GetDatabaseFile()
 	var source_path = drive_letter + ":/sqlite-database.db"
+	var db_letter = strings.ReplaceAll(filepath.VolumeName(database_path), ":", "")
 	err := helper.Exists(source_path)
+
+	if db_letter == drive_letter {
+		return errors.New("database is already loaded, pick another one")
+	}
 
 	if err != nil {
 		return err

@@ -336,6 +336,7 @@ func init() {
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(startRestoreCmd)
 	rootCmd.AddCommand(ClearAllTablesCmd)
+	rootCmd.AddCommand(loadDBFromDriveCmd)
 
 	addDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 
