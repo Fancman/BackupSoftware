@@ -814,7 +814,7 @@ func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
 		return false
 	}
 
-	fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(source_occur+backup_occur) + " more records.")
+	fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(source_occur+backup_occur-1) + " more records.")
 
 	return false
 }

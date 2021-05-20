@@ -42,9 +42,9 @@
     - FK drive
     - datetime (INTEGER is probably most efficient)
 
-* TODO Allow user to choose just one destination/or all of them
+* DONE Allow user to choose just one destination/or all of them
   when starting the backup or updating archive.
-* TODO Allow user to add or remove sources/destinations in backup
+* DONE Allow user to add or remove sources/destinations in backup
   This probably needs a new command.
 * DONE Show the timestamp somewhere
   Probably a switch for =list-backups=.
@@ -58,7 +58,7 @@
   Don't start a separate process for each source.
 * DONE Allow user to choose archive to backup or restore based on the archive
   Not just based on sources.
-* TODO =remove-source= doesn't seem to work
+* DONE =remove-source= doesn't seem to work
 * TODO Fix =remove-backup=
   =remove-backup= doesn't seem to delete the archive from the database. See also
   next TODO.
@@ -93,7 +93,7 @@ sql: Scan error on column index 0, name "source_id": converting NULL to int64 is
   - Original archive still exists and was not removed from the DB.
   - Original sources still exist and were not removed from the DB -- they still
     point to the original archive.
-* TODO Improve =remove-backup=
+* DONE Improve =remove-backup=
   - If archive IDs are being used, allow user to somehow see them.
   - Allow user to use the name of the archive.
   - Allow user to use the drive letter.

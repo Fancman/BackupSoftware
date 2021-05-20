@@ -94,7 +94,7 @@ var (
 	}
 
 	startBackupCmd = &cobra.Command{
-		Use:   "start-backup -s [source ids]",
+		Use:   "start-backup -s [source ids] -a [archive name]",
 		Short: "Start backup for record in db by its ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -183,6 +183,10 @@ var (
 				return err
 			}
 
+			if source_id == 0 {
+				return errors.New("atleast one source id has to be passed")
+			}
+
 			RemoveSource(source_id)
 
 			return nil
@@ -253,6 +257,7 @@ var (
 			if archive_name == "" {
 				return errors.New("requires archive name")
 			}
+
 			return nil
 		},
 	}
