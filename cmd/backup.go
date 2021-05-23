@@ -136,6 +136,7 @@ func ListBackups() int {
 	var destinations []string
 
 	if err != nil {
+		fmt.Printf("Error getting data from database: %s\n", err)
 		return 0
 	}
 
