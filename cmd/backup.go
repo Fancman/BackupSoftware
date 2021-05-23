@@ -865,6 +865,7 @@ func RemoveDestinationByDrive(drive_letter string) int {
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "Drive %s not found.\n", drive_letter)
 	return 0
 }
 
@@ -893,6 +894,7 @@ func RemoveDestinationByArchive(archive_name string) int {
 		}
 	}
 
+	fmt.Fprintf(os.Stderr, "Archive %s not found.\n", archive_name)
 	return 0
 }
 
