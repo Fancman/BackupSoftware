@@ -42,23 +42,13 @@
     - FK drive
     - datetime (INTEGER is probably most efficient)
 
-* DONE Allow user to choose just one destination/or all of them
-  when starting the backup or updating archive.
-* DONE Allow user to add or remove sources/destinations in backup
-  This probably needs a new command.
-* DONE Show the timestamp somewhere
-  Probably a switch for =list-backups=.
-* DONE Allow user to enter NAME for a Drive
-* DONE Implement separate update operation
-  Now it's always executing /add/ operation when creating or updating the
-  archive. When the archive already exists, it should run the /update/
-  operation.
 
-* DONE Use just one process when archiving multiple sources
-  Don't start a separate process for each source.
-* DONE Allow user to choose archive to backup or restore based on the archive
-  Not just based on sources.
-* DONE =remove-source= doesn't seem to work
+
+* TODO Allow user to choose just one destination/or all of them
+  when starting the backup or updating archive.
+* TODO Allow user to add or remove destinations in backup
+  This probably needs a new command.
+* TODO Finish implementation of =add-source=
 * TODO Error on =list-backups=
   There is an archive defined, but backups haven't been executed yet. Probably
   related to the previous TODO (occured after trying to create an archive with
@@ -90,15 +80,77 @@ sql: Scan error on column index 0, name "source_id": converting NULL to int64 is
   - Original archive still exists and was not removed from the DB.
   - Original sources still exist and were not removed from the DB -- they still
     point to the original archive.
-* DONE Improve =remove-backup=
-  - If archive IDs are being used, allow user to somehow see them.
-  - Allow user to use the name of the archive.
-  - Allow user to use the drive letter.
-  - Ability to use IDs or KSUIDs can remain.
-* DONE Don't print that drive was added when it is already in DB (=add-drive=)
-  It's misleading information.
-* DONE Update =database_scheme.sql=
-  Is it still needed? Maybe it's unnecessary duplication.
+* TODO Bug in ~CreateSource~
+  The bug concerns these lines:
+  #+begin_src go
+	stmt := `SELECT id FROM source WHERE drive_ksuid = ? AND path = ?`
+
+	row := conn.db.QueryRow(stmt, drive_ksuid, path)
+	err = row.Scan(&id)
+
+	if err == nil {
+		fmt.Println("Source path already exists, archive will be updated.")
+		return -1
+	}
+  #+end_src
+  If these conditions are true, then a new source is not created (because
+  function returns =-1=) and database is corrupted as archive doesn't have a
+  source. See [[*Error on =list-backups=][Error on =list-backups=]] for what this bug causes.
+
+  If the function was meant to update =archive_id= for the source row, this is
+  also incorrect, because existing archive shouldn't be changed just because the
+  drive and the path are the same (they are not the primary key).
+
+  Similar bug with the same symptoms can be created by creating a new backup
+  with sources already existing in the database, but with a different archive
+  name (bug with the same archive name is described in [[*Error on =list-backups=][Error on =list-backups=]]).
+* TODO Bug when removing backup by path
+  Steps to reproduce:
+  1) Create a backup with one source and one destination.
+  2) Remove it as =BackupSoftware.exe remove-backup -p P:\BAK\archive.7z= (use
+     correct path)
+  3) =archive= and =backup= entries are deleted, but =source= stays
+* TODO Bug when removing backup by archive id and drive ksuid
+  Steps to reproduce:
+  1) Create a backup with one source and one destination.
+  2) Remove it as =\BackupSoftware.exe remove-backup -i 18 -d
+     1rUkdB28YaZ6mCmzStA1LfKY026= (use correct id and ksuid)
+  3) Output:
+     #+begin_example
+Archive couldnt be deleted because it is used in -1 more records.
+Destination was removed successfully.
+     #+end_example
+  4) =backup= entry was deleted, but =source= and =archive= stay
+* TODO Show archive IDs somewhere in the application
+  =remove-backup= uses archive ids to remove archive from a drive. If this
+  information is not shown anywhere to the user, user (and scripted tools) can't
+  use this feature.
+
+  Maybe command =list-archives= would solve this issue.
+* TODO Create destination path if it doesn't exist
+* TODO Check if the main archive file is locked before creating tmp archive
+  When the archive is opened in 7Zip, it can't be changed and it leaves tmp file
+  on the drive which prevents further backup runs.
+* TODO Is ~helper.CopyFile~ really needed?
+  Why can't we just use file system functions?
+* TODO Remove unneeded info about existing drive information in commands other than =add-drive=
+  This is the suspect: =Drive is already in DB and .drive file exists.=
+
+  It should be kept in =add-drive= command, but not shown anywhere else where it
+  is superfluous infromation.
+* TODO Use constant for database name
+  Duplicity leads to errors and the name will surely change in future once we
+  rename the application.
+  #+begin_example
+cmd/backup.go:432:	var drive_db_path = drive_letter + ":/sqlite-database.db"
+cmd/backup.go:448:	var source_path = drive_letter + ":/sqlite-database.db"
+cmd/backup.go:485:				drive_db_path := drive_letter + ":/sqlite-database.db"
+cmd/backup.go:517:				drive_db_path := drive_letter + ":/sqlite-database.db"
+cmd/backup.go:563:			helper.CopyFile(newest_drive_letter+":/sqlite-database.db", database_path)
+cmd/backup.go:624:			var drive_db_path = drive_letter + ":/sqlite-database.db"
+database/database.go:713:		fmt.Println("sqlite-database.db created")
+helpers/helper.go:53:	return appdata_path + "/BackupSoft/sqlite-database.db"
+  #+end_example
 
 
 * TODO Make abstractions for other file formats
