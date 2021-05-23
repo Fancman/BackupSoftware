@@ -845,57 +845,67 @@ func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
 func RemoveDestinationByDrive(drive_letter string) int {
 	drive_ksuid := helper.GetKsuidFromDrive(drive_letter)
 
-	if drive_ksuid != "" {
-		res := db.RemoveDestinationByDrive(drive_ksuid)
-		if res {
-			source_ids := db.GetSourcesWithoutBackup()
-			archive_ids := db.GetArchivesWithoutBackup()
-
-			for _, source_id := range source_ids {
-				db.RemoveSource(source_id)
-				fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
-			}
-
-			for _, archive_id := range archive_ids {
-				db.DelArchiveDB(archive_id)
-				fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
-			}
-
-			return 1
-		}
+	if drive_ksuid == "" {
+		fmt.Fprintf(os.Stderr, "Drive %s not found.\n", drive_letter)
+		return 0
 	}
 
-	fmt.Fprintf(os.Stderr, "Drive %s not found.\n", drive_letter)
-	return 0
+	res := db.RemoveDestinationByDrive(drive_ksuid)
+
+	if !res {
+		fmt.Fprintf(os.Stderr, "Error deleting backups from drive %s from the database.\n",
+			drive_letter)
+		return 0
+	}
+
+	source_ids := db.GetSourcesWithoutBackup()
+	archive_ids := db.GetArchivesWithoutBackup()
+
+	for _, source_id := range source_ids {
+		db.RemoveSource(source_id)
+		fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
+	}
+
+	for _, archive_id := range archive_ids {
+		db.DelArchiveDB(archive_id)
+		fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
+	}
+
+	return 1
 }
 
 func RemoveDestinationByArchive(archive_name string) int {
 	archive_id := db.GetArchiveID(archive_name)
 
-	if archive_id > 0 {
-		res := db.RemoveDestinationByArchive(archive_id)
-		if res {
-			source_ids := db.GetSourcesWithoutBackup()
-			archive_ids := db.GetArchivesWithoutBackup()
-
-			for _, source_id := range source_ids {
-				db.RemoveSource(source_id)
-				fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
-			}
-
-			fmt.Println(strconv.Itoa(len(source_ids)) + " unused sources were deleted.")
-
-			for _, archive_id := range archive_ids {
-				db.DelArchiveDB(archive_id)
-				fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
-			}
-
-			return 1
-		}
+	if archive_id <= 0 {
+		fmt.Fprintf(os.Stderr, "Archive %s not found.\n", archive_name)
+		return 0
 	}
 
-	fmt.Fprintf(os.Stderr, "Archive %s not found.\n", archive_name)
-	return 0
+	res := db.RemoveDestinationByArchive(archive_id)
+
+	if !res {
+		fmt.Fprintf(os.Stderr, "Error deleting backups from archive %s from the database.\n",
+			archive_name)
+		return 0
+	}
+
+	source_ids := db.GetSourcesWithoutBackup()
+	archive_ids := db.GetArchivesWithoutBackup()
+
+	for _, source_id := range source_ids {
+		db.RemoveSource(source_id)
+		fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
+	}
+
+	fmt.Println(strconv.Itoa(len(source_ids)) + " unused sources were deleted.")
+
+	for _, archive_id := range archive_ids {
+		db.DelArchiveDB(archive_id)
+		fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
+	}
+
+	return 1
 }
 
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
@@ -917,17 +927,29 @@ func RemoveDestinationByPath(destination_path string) {
 	dest_letter := strings.ReplaceAll(filepath.VolumeName(destination_path), ":", "")
 	dest_drive_ksuid := AddDrive(dest_letter, "")
 
-	if len(dest_drive_ksuid) > 0 {
-		dest_archive_name := filepath.Base(destination_path)
-		if len(dest_archive_name) > 0 {
-			res := db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
+	if len(dest_drive_ksuid) <= 0 {
+		fmt.Fprintf(os.Stderr, "Drive %s not found.\n", dest_letter)
+		return
+	}
 
-			if res {
-				archive_id := db.GetArchiveID(archive_name)
-				if archive_id > 0 {
-					RemoveUnusedArchive(archive_id, "destination")
-				}
-			}
-		}
+	dest_archive_name := filepath.Base(destination_path)
+
+	if len(dest_archive_name) <= 0 {
+		fmt.Fprintf(os.Stderr, "Archive %s not found.\n", dest_archive_name)
+		return
+	}
+
+	res := db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
+
+	if !res {
+		fmt.Fprintf(os.Stderr,
+			"Error deleting archive %s on drive %s from the database.\n",
+			archive_name, dest_letter)
+	}
+
+	archive_id := db.GetArchiveID(archive_name)
+
+	if archive_id > 0 {
+		RemoveUnusedArchive(archive_id, "destination")
 	}
 }
