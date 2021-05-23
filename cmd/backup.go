@@ -733,10 +733,10 @@ func AddDrive(drive_letter string, drive_name string) string {
 			id := db.InsertDriveDB(ksuid, drive_name)
 
 			if id > 0 {
-				fmt.Println("Drive was succesfully inserted into DB.")
+				fmt.Println("Drive was successfully inserted into DB.")
 				success := CreateDiskIdentityFile(drive_letter, ksuid)
 				if success {
-					fmt.Println(".drive file was succesfully created.")
+					fmt.Println(".drive file was successfully created.")
 					return ksuid
 				}
 			}
@@ -750,7 +750,7 @@ func AddDrive(drive_letter string, drive_name string) string {
 	ksuid = helper.GetKsuidFromDrive(drive_letter)
 
 	if ksuid == "" {
-		fmt.Println("Drive don't have .drive file accessible.")
+		fmt.Println("Drive doesn't have .drive file accessible.")
 		return ""
 	}
 
@@ -762,23 +762,23 @@ func AddDrive(drive_letter string, drive_name string) string {
 		if res == 1 {
 			fmt.Println("Drive name was updated.")
 		} else {
-			fmt.Println("Drive name cant be updated.")
+			fmt.Println("Drive name can't be updated.")
 		}
 	}
 
 	if drive_info != "" {
-		fmt.Println("Drive was already in DB and .drive file is created.")
+		fmt.Println("Drive is already in DB and .drive file exists.")
 		return ksuid
 	}
 	// Drive isnt in db
 	res := db.InsertDriveDB(ksuid, drive_name)
 
 	if res <= 0 {
-		fmt.Println("Drive cant be inserted into DB.")
+		fmt.Println("Drive can't be inserted into DB.")
 		return ""
 	}
 
-	fmt.Println("Drive was succesfully inserted into DB.")
+	fmt.Println("Drive was successfully inserted into DB.")
 
 	return ksuid
 }
