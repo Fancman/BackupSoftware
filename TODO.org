@@ -59,9 +59,6 @@
 * DONE Allow user to choose archive to backup or restore based on the archive
   Not just based on sources.
 * DONE =remove-source= doesn't seem to work
-* TODO Fix =remove-backup=
-  =remove-backup= doesn't seem to delete the archive from the database. See also
-  next TODO.
 * TODO Error on =list-backups=
   There is an archive defined, but backups haven't been executed yet. Probably
   related to the previous TODO (occured after trying to create an archive with

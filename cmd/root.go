@@ -264,7 +264,7 @@ var (
 				return err
 			}
 
-			if drive_letter != "" {
+			if archive_name != "" {
 				RemoveDestinationByArchive(archive_name)
 			}
 
