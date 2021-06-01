@@ -43,7 +43,7 @@ deploy:
   #release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
   release: Backup Software - DEV version
   #tag: $(APPVEYOR_REPO_TAG_NAME)
-  description: 'Release description'
+  description: 'Working app'
   provider: GitHub
   auth_token:
     secure: awRHVY0L1MODweHZoCISezWyO9AfhKElTWorVXCw1oMi6KXKvQqH8TFtO6YqCrpK # your encrypted token from GitHub
