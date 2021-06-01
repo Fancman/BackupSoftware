@@ -41,8 +41,8 @@ artifacts: # push all files in directory
   
 deploy:
   #release: BackupSoftware-v$(APPVEYOR_BUILD_VERSION)
-  release: Backup Software - DEV version
-  tag: BackupSoftware-DEV
+  release: Backup Software - DEV version v$(APPVEYOR_BUILD_VERSION)
+  tag: $(APPVEYOR_REPO_TAG_NAME)
   description: 'Release description'
   provider: GitHub
   auth_token:
@@ -50,7 +50,7 @@ deploy:
   artifact: App
   draft: false
   prerelease: true
-  #force_update: true
+  force_update: true
   on:
     branch: master                 # release from master branch only
     APPVEYOR_REPO_TAG: true        # deploy on tag push only
