@@ -121,8 +121,18 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 	for _, backup_path := range backup_paths {
 
-		if helper.Exists(backup_path) == nil {
-			backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+		//fmt.Println(backup_path, helper.Exists(backup_path))
+
+		backup_letter := strings.ReplaceAll(filepath.VolumeName(backup_path), ":", "")
+
+		if helper.DriveExists(backup_letter) == nil {
+
+			if helper.Exists(backup_path) != nil {
+				err = os.MkdirAll(backup_path, os.ModePerm)
+				if err != nil {
+					continue
+				}
+			}
 
 			backup_drive_ksuid := AddDrive(backup_letter, "")
 
@@ -141,6 +151,7 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 			}
 		}
+
 	}
 
 	RemoveUnusedArchive(archive_id)
