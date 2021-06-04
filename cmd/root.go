@@ -69,7 +69,7 @@ var (
 
 	addDriveCmd = &cobra.Command{
 		Use:   "add-drive [drive letter] -n [Custom drive name]",
-		Short: "Add drive to db with optional custom name and create .drive file",
+		Short: "Adds drive to db with optional custom name and creates .drive file",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 

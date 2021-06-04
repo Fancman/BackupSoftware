@@ -28,16 +28,19 @@ Usage:
   Backupsoft.exe [command] 
 
 Available Commands:
-  - add-drive     Add drive to db with optional custom name and create .drive file
+  - add-drive -- Adds drive to db with optional custom name and creates .drive file
 	```
-	Backupsoft add-drive [drive letter] -n [Custom drive name] [flags]
+	Backupsoft.exe add-drive [drive letter] -n [Custom drive name] [flags]
 
 	Flags:
 	-n, --drive-name string   Drive name
 	-h, --help                help for add-drive
 	```
 
-  - clear-tables  Deletes all records from tables.
+  - clear-tables -- Deletes all records from tables.
+  	```
+	Backupsoft.exe clear-tables
+	```
   - create-backup Create backup record from source and destination paths. Archive name is optional.
   - help          Help about any command
   - list-backups  List stored backup records
