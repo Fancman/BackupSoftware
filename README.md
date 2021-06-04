@@ -5,11 +5,37 @@ Nástroj na distribuované zálohovanie
 [![Build status](https://ci.appveyor.com/api/projects/status/github/Fancman/BackupSoftware?svg=TRUE)](https://ci.appveyor.com/project/Fancman/BackupSoftware)
 
 
-## Navod
 
-- Listnutie dostupnych drivov vo formate ([drive letter] - [ksuid ak ma] - [status]). Prikaz: list-drives
-- Pridanie drivu do databazy a vytvorenie .drive subora. Prikaz: add-drive [drive letter] 
-- Vytvorenie zaznamu zalohy. Prikaz: create-backup -s [source path] -d [destination drive ksuid] -p [custom path on drive]
-- Listnutie zaznamov zaloh vo formate ([backup id] [source path] [destination drive ksuid]). Prikaz: list-backups
-- Spustenie zalohovania pre zaznam. Prikaz: start-backup [backup id]
-- Obnovenie podla zaznamu zalohy. Prikaz: start-restore [backup id]
+### How to get it
+
+To get the latest version clone project to current directory and build it from source:
+
+```
+git clone https://github.com/Fancman/BackupSoftware
+cd BackupSoftware
+go build .
+```
+
+Program should be now succesfully built. You can also use already built project from release page on [github.com](https://github.com/Fancman/BackupSoftware/releases) or download it from [AppVeyor](https://ci.appveyor.com/project/Fancman/backupsoftware) from subpage "Artifacts".
+
+
+
+### Running app
+List all commands with command  `help`
+
+
+Usage:
+  Backupsoft [command]
+
+Available Commands:
+  add-drive     Add drive to db with optional custom name and create .drive file
+  clear-tables  Deletes all records from tables.
+  create-backup Create backup record from source and destination paths. Archive name is optional.
+  help          Help about any command
+  list-backups  List stored backup records
+  list-drives   List available drives.
+  load-db       Load database from drive
+  remove-backup Remove backup records by archive_id and drive_ksuid, path to destination, archive name or drive letter
+  remove-source Remove source by source ids
+  start-backup  Start backup for record in db by its ids
+  start-restore Start restore from record in db by its id

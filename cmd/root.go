@@ -332,9 +332,10 @@ func init() {
 	rootCmd.AddCommand(addDriveCmd)
 	rootCmd.AddCommand(startBackupCmd)
 	rootCmd.AddCommand(createBackupCmd)
+	rootCmd.AddCommand(startRestoreCmd)
+
 	rootCmd.AddCommand(removeSourceCmd)
 	rootCmd.AddCommand(removeDestinationCmd)
-	rootCmd.AddCommand(startRestoreCmd)
 	rootCmd.AddCommand(ClearAllTablesCmd)
 	rootCmd.AddCommand(loadDBFromDriveCmd)
 
