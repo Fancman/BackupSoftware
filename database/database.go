@@ -373,6 +373,38 @@ func (conn *SQLite) GetSourcesWithoutBackup() []int64 {
 	return source_ids
 }
 
+func (conn *SQLite) GetArchives() []Archive {
+	var archives = []Archive{}
+	var id int64
+	var name string
+
+	err := conn.OpenConnection(helper.GetDatabaseFile())
+
+	if err != nil {
+		return archives
+	}
+
+	stmt := `select id, name from archive`
+	rows, err := conn.QueryRows(stmt)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&id, &name)
+
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		archives = append(archives, Archive{id, name})
+	}
+
+	return archives
+}
+
 func (conn *SQLite) GetNewestTimestamp(database_path string) sql.NullTime {
 	err := conn.OpenConnection(database_path)
 

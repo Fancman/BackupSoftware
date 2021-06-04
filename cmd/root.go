@@ -56,6 +56,15 @@ var (
 		},
 	}
 
+	listArchivesCmd = &cobra.Command{
+		Use:   "list-archives",
+		Short: "List all archives.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ListArchives()
+			return nil
+		},
+	}
+
 	ClearAllTablesCmd = &cobra.Command{
 		Use:   "clear-tables",
 		Short: "Deletes all records from tables.",
@@ -341,6 +350,7 @@ func init() {
 	rootCmd.AddCommand(removeDestinationCmd)
 	rootCmd.AddCommand(ClearAllTablesCmd)
 	rootCmd.AddCommand(loadDBFromDriveCmd)
+	rootCmd.AddCommand(listArchivesCmd)
 
 	addDriveCmd.Flags().StringP("drive-name", "n", "", "Drive name")
 

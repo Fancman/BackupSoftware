@@ -695,6 +695,21 @@ func ListDrives() {
 	table.Render()
 }
 
+func ListArchives() {
+	archives := db.GetArchives()
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Archive id", "Archive name"})
+
+	for _, a := range archives {
+		var table_row []string
+		table_row = append(table_row, strconv.FormatInt(a.Id, 10))
+		table_row = append(table_row, a.Name)
+
+		table.Append(table_row)
+	}
+	table.Render()
+}
+
 /*func DriveLetter2Ksuid(drive_letter string) (string, error) {
 	err := helper.DriveExists(drive_letter)
 	if err == nil {
