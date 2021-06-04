@@ -164,7 +164,10 @@ var (
 				backup_drives = append(backup_drives, backup_letter)
 			}
 
-			CreateSourceBackup(source_paths, backup_paths, archive_name)
+			err := CreateSourceBackup(source_paths, backup_paths, archive_name)
+			if err != nil {
+				fmt.Println(err)
+			}
 			//CreateSourceBackup("C:/Users/tomas/Pictures/Backgrounds", "E:/backup", "test.7z")
 			//fmt.Println(source, dest_drive_ksuid, dest_path)
 			//insert_backups_db(source, dest_drive_ksuid, dest_drive_letter, dest_path)

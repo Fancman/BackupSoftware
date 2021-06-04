@@ -52,6 +52,9 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 	fmt.Println("Sources: " + strings.Join(source_paths, ", "))
 	fmt.Println("Backups: " + strings.Join(backup_paths, ", "))
 
+	var source_ids []int64
+	var archive_usage int = 0
+
 	archive_ext := path.Ext(archive_name)
 	archive_name = helper.FileNameWithoutExtension(archive_name)
 	default_archive_name := "backup-" + strconv.FormatInt(time.Now().Unix(), 10)
@@ -100,12 +103,20 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 				err = db.UpdateSourceArchive(source_id, archive_id)
 
 				if err == nil {
+					source_ids = append(source_ids, source_id)
+					archive_usage += 1
 					continue
 				}
-				// Vymazat vytvorene zaznamy pred continue ak sa vrati 0
 			}
 		}
 
+	}
+
+	//fmt.Println("Archive usage: " + strconv.Itoa(archive_usage))
+
+	if archive_usage == 0 {
+		db.DelArchiveDB(archive_id)
+		return errors.New("records for sources couldnt be created, so unused archive was deleted")
 	}
 
 	for _, backup_path := range backup_paths {
@@ -120,12 +131,19 @@ func CreateSourceBackup(source_paths []string, backup_paths []string, archive_na
 
 				err := db.CreateBackup(archive_id, backup_drive_ksuid, backup_path)
 
-				if err != nil {
+				if err == nil {
 					continue
 				}
+
+				for _, source_id := range source_ids {
+					db.RemoveSource(source_id)
+				}
+
 			}
 		}
 	}
+
+	RemoveUnusedArchive(archive_id)
 
 	return nil
 }
@@ -767,7 +785,7 @@ func AddDrive(drive_letter string, drive_name string) string {
 	}
 
 	if drive_info != "" {
-		fmt.Println("Drive is already in DB and .drive file exists.")
+		//fmt.Println("Drive is already in DB and .drive file exists.")
 		return ksuid
 	}
 	// Drive isnt in db
@@ -786,10 +804,6 @@ func AddDrive(drive_letter string, drive_name string) string {
 func RemoveSource(source_id int64) error {
 	archive_id := db.GetSourceArchive(source_id)
 
-	if archive_id > 0 {
-		RemoveUnusedArchive(archive_id, "source")
-	}
-
 	err := db.RemoveSource(source_id)
 
 	if err != nil {
@@ -797,35 +811,34 @@ func RemoveSource(source_id int64) error {
 		return err
 	}
 
+	if archive_id > 0 {
+		RemoveUnusedArchive(archive_id)
+	}
+
 	return nil
 }
 
-func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
+func RemoveUnusedArchive(archive_id int64) bool {
 	source_occur, backup_occur := db.ArchiveUsed(archive_id)
+	var removed bool = false
 
-	if archive_usage == "source" {
-		source_occur -= 1
+	if source_occur > 0 && backup_occur == 0 {
+		err := db.RemoveSources(archive_id)
+		if err {
+			fmt.Println("Sources without backup records were deleted.")
+			removed = true
+		}
 	}
 
-	if archive_usage == "destination" {
-		backup_occur -= 1
+	if source_occur == 0 && backup_occur > 0 {
+		err := db.RemoveDestinations(archive_id)
+		if err {
+			fmt.Println("Backups without source records were deleted.")
+			removed = true
+		}
 	}
 
-	if source_occur == 0 || backup_occur == 0 {
-		if source_occur > 0 {
-			err := db.RemoveSources(archive_id)
-			if err {
-				fmt.Println("Sources without backup records were deleted.")
-			}
-		}
-
-		if backup_occur > 0 {
-			err := db.RemoveDestinations(archive_id)
-			if err {
-				fmt.Println("Backups without source records were deleted.")
-			}
-		}
-
+	if removed {
 		res := db.DelArchiveDB(archive_id)
 
 		if res {
@@ -834,10 +847,9 @@ func RemoveUnusedArchive(archive_id int64, archive_usage string) bool {
 		}
 
 		fmt.Println("Archive couldnt be deleted.")
-		return false
 	}
 
-	fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(source_occur+backup_occur-1) + " more records.")
+	//fmt.Println("Archive couldnt be deleted because it is used in " + strconv.Itoa(source_occur+backup_occur-1) + " more records.")
 
 	return false
 }
@@ -858,18 +870,7 @@ func RemoveDestinationByDrive(drive_letter string) int {
 		return 0
 	}
 
-	source_ids := db.GetSourcesWithoutBackup()
-	archive_ids := db.GetArchivesWithoutBackup()
-
-	for _, source_id := range source_ids {
-		db.RemoveSource(source_id)
-		fmt.Println("Unused source was deleted with id: " + strconv.FormatInt(source_id, 10))
-	}
-
-	for _, archive_id := range archive_ids {
-		db.DelArchiveDB(archive_id)
-		fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
-	}
+	removeUnusedBackupsArchives()
 
 	return 1
 }
@@ -890,6 +891,12 @@ func RemoveDestinationByArchive(archive_name string) int {
 		return 0
 	}
 
+	removeUnusedBackupsArchives()
+
+	return 1
+}
+
+func removeUnusedBackupsArchives() {
 	source_ids := db.GetSourcesWithoutBackup()
 	archive_ids := db.GetArchivesWithoutBackup()
 
@@ -904,15 +911,13 @@ func RemoveDestinationByArchive(archive_name string) int {
 		db.DelArchiveDB(archive_id)
 		fmt.Println("Unused archive was deleted with id: " + strconv.FormatInt(archive_id, 10))
 	}
-
-	return 1
 }
 
 func RemoveDestination(archive_id int64, drive_ksuid string) int {
 	res := db.RemoveDestination(archive_id, drive_ksuid)
 
 	if res {
-		RemoveUnusedArchive(archive_id, "destination")
+		RemoveUnusedArchive(archive_id)
 		fmt.Println("Destination was removed successfully.")
 		return 1
 	}
@@ -939,6 +944,8 @@ func RemoveDestinationByPath(destination_path string) {
 		return
 	}
 
+	archive_id := db.GetArchiveID(dest_archive_name)
+
 	res := db.RemoveDestinationByPath(dest_archive_name, dest_drive_ksuid)
 
 	if !res {
@@ -947,9 +954,9 @@ func RemoveDestinationByPath(destination_path string) {
 			archive_name, dest_letter)
 	}
 
-	archive_id := db.GetArchiveID(archive_name)
+	fmt.Println("Archive name : " + dest_archive_name)
 
 	if archive_id > 0 {
-		RemoveUnusedArchive(archive_id, "destination")
+		RemoveUnusedArchive(archive_id)
 	}
 }
