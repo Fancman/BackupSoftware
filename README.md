@@ -41,7 +41,17 @@ Available Commands:
   	```
 	Backupsoft.exe clear-tables
 	```
-  - create-backup Create backup record from source and destination paths. Archive name is optional.
+	
+  - create-backup -- Create backup record from source and destination paths. Archive name is optional.
+ 	```
+	Backupsoft.exe create-backup -s [source paths] -d [destination paths] -a [archive name] [flags]
+
+	Flags:
+	-a, --archive string            archive name
+	-d, --destination stringArray   destination path
+	-h, --help                      help for create-backup
+	-s, --source stringArray        sources paths
+	```
   - help          Help about any command
   - list-backups  List stored backup records
   - list-drives   List available drives.
