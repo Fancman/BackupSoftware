@@ -94,7 +94,7 @@ var (
 	}
 
 	startBackupCmd = &cobra.Command{
-		Use:   "start-backup -s [source ids] -a [archive name]",
+		Use:   "start-backup -s [source ids] -a [archive names]",
 		Short: "Start backup for record in db by its ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -112,8 +112,8 @@ var (
 	}
 
 	startRestoreCmd = &cobra.Command{
-		Use:   "start-restore -s [source ids] -b [backup paths]",
-		Short: "Start restore from record in db by its id",
+		Use:   "start-restore -s [source ids] | -a [archive names] -b [backup paths]",
+		Short: "Start restore from record in db by its ids or archive names, optional backup paths (extract only this archive)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(source_ids) == 0 && len(archive_names) == 0 {
